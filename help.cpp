@@ -1,4 +1,5 @@
 #include "help.h"
+#include <cmath>
 
 int first(int A)
 {
