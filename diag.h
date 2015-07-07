@@ -6,5 +6,5 @@ using namespace std;
 using namespace Eigen;
 
 void generate_H(MatrixXd&H,double g);
-void diag(MatrixXd &H,double&E_gs);
+void diag(MatrixXd &H,double&E_gs,VectorXd& coeff);
 #endif

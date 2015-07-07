@@ -1,4 +1,6 @@
 #include"diag.h"
+#include<iostream>
+using namespace std;
 void generate_H(MatrixXd&H,double g)
 {
   H.resize(6,6);
@@ -13,9 +15,10 @@ void generate_H(MatrixXd&H,double g)
 	  H(i,j)=2*(i+1)-g;
       }
 }
-void diag(MatrixXd &H,double&E_gs)
+void diag(MatrixXd &H,double&E_gs,VectorXd & coeff)
 {
   SelfAdjointEigenSolver<MatrixXd> solver(H);
   if(solver.info()!=Success) abort();
   E_gs=solver.eigenvalues()[0];
+  coeff=solver.eigenvectors().col(0);
 }
