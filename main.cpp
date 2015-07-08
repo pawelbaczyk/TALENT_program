@@ -58,6 +58,7 @@ public:
     Pairing spOrbitals;
     void generateSPOrbitals(int);
     void set_g(double);
+    int numberSP;
 
     //configurations
     void generateConfigurations();
@@ -85,11 +86,18 @@ public:
     void MBPT_calculateDeltaE();
     vector<double> MBPT_coefficients;
     double MBPT_deltaE;
+
+    //CCD
+    void CCD_generateMatrices();
+    void CCD_calculateTau();
+    MatrixXd CCD_V, CCD_V_tilde, CCD_e, CCD_Tau, CCD_t;
+    double CCD_deltaE;
 };
 
 void System::generateSPOrbitals(int PMax)//generate s.p. orbitals
 {
     spOrbitals.generateSP(PMax);
+    numberSP = spOrbitals.SP_States.size();
 }
 
 void System::set_g(double g)//set pairing g value
@@ -144,7 +152,7 @@ void System::generate_H()
       {
 	if(i!=j)
 	  H(i,j)=-0.5*g;
-	if(i+j==6)
+    if(i+j==5)
 	  H(i,j)=0;
 	if(i==j)
 	  H(i,j)=2*(i+1)-g;
@@ -152,58 +160,58 @@ void System::generate_H()
 }
 double System::getH(int a,int b)
 {
-  int bra=configurations[a];
-  int ket=configurations[b];
-  int diffCount=0;
-  vector<int> OccupiedPos;
-  vector<int> UnoccupiedPos;
-  vector<int> NumOrbitalsKet;
-  vector<int> NumOrbitalsBra;
-  int numKet(0),numBra(0);
-  for(int i=0;i<spOrbitals.SP_States.size();i++)
-    {
-      if(getBit(bra,i)!=getBit(ket,i))
-	{
-	  ++diffCount;
-	  if(diffCount>4) break;
-	  if(getBit(ket,i))
-	    {
-	      OccupiedPos.push_back(i);
-	      NumOrbitalsKet.push_back(numKet);
-	    }
-	  else
-	    {
-	      UnoccupiedPos.push_back(i);
-	      NumOrbitalsBra.push_back(numBra);
-	    }
-	}
-      if(getBit(ket,i)) ++numKet;
-      if(getBit(bra,i)) ++numBra;
-    }
-  if(diffCount>4) return 0;
-  if(diffCount==4)
-    {
-      int phase=(NumOrbitalsBra[0]+NumOrbitalsBra[1]+NumOrbitalsKet[0]+NumOrbitalsKet[1])%2?-1:1;
-      return phase*V2B(UnoccupiedPos[0],UnoccupiedPos[1],OccupiedPos[0],OccupiedPos[1]);
-    }
-  else if(diffCount==2)
-    {
-      int phase=(NumOrbitalsBra[0]+NumOrbitalsKet[0])%2?-1:1;
-      return phase*V1B(UnoccupiedPos[0],OccupiedPos[0]);
-    }
-  else if(diffCount==0)
-    {
-      double temp;
-      for(int i=0;i<spOrbitals.SP_States.size();i++)
-	{
-	  if(getBit(ket,i))
-	    {
-	      //	      temp+=V1B(i,i)+0.5*
-	    }
-	}
-    }
-  else
-    return 0;
+//  int bra=configurations[a];
+//  int ket=configurations[b];
+//  int diffCount=0;
+//  vector<int> OccupiedPos;
+//  vector<int> UnoccupiedPos;
+//  vector<int> NumOrbitalsKet;
+//  vector<int> NumOrbitalsBra;
+//  int numKet(0),numBra(0);
+//  for(int i=0;i<spOrbitals.SP_States.size();i++)
+//    {
+//      if(getBit(bra,i)!=getBit(ket,i))
+//	{
+//	  ++diffCount;
+//	  if(diffCount>4) break;
+//	  if(getBit(ket,i))
+//	    {
+//	      OccupiedPos.push_back(i);
+//	      NumOrbitalsKet.push_back(numKet);
+//	    }
+//	  else
+//	    {
+//	      UnoccupiedPos.push_back(i);
+//	      NumOrbitalsBra.push_back(numBra);
+//	    }
+//	}
+//      if(getBit(ket,i)) ++numKet;
+//      if(getBit(bra,i)) ++numBra;
+//    }
+//  if(diffCount>4) return 0;
+//  if(diffCount==4)
+//    {
+//      int phase=(NumOrbitalsBra[0]+NumOrbitalsBra[1]+NumOrbitalsKet[0]+NumOrbitalsKet[1])%2?-1:1;
+//      return phase*V2B(UnoccupiedPos[0],UnoccupiedPos[1],OccupiedPos[0],OccupiedPos[1]);
+//    }
+//  else if(diffCount==2)
+//    {
+//      int phase=(NumOrbitalsBra[0]+NumOrbitalsKet[0])%2?-1:1;
+//      return phase*V1B(UnoccupiedPos[0],OccupiedPos[0]);
+//    }
+//  else if(diffCount==0)
+//    {
+//      double temp;
+//      for(int i=0;i<spOrbitals.SP_States.size();i++)
+//	{
+//	  if(getBit(ket,i))
+//	    {
+//	      //	      temp+=V1B(i,i)+0.5*
+//	    }
+//	}
+//    }
+//  else
+//    return 0;
 }
 // void System::generate_H()
 // {
@@ -270,28 +278,116 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
 
 void System::generateConfigurations()
 {
-  int config = first(A);
-  int configLast = last(spOrbitals.SP_States.size(),A);
-  configurations.push_back(config);
-  do
-    {
-      config = next(config);
-      int NumUnpaired=0;
-      for(int n=0;n<spOrbitals.SP_States.size()/2;n++)
-	{
-	  if(getBit(config,2*n)!=getBit(config,2*n+1))
-	    ++NumUnpaired;
-	}
-      if(NumUnpaired==0)
-	configurations.push_back(config);
-    }
-  while(config != configLast);
+//  int config = first(A);
+//  int configLast = last(spOrbitals.SP_States.size(),A);
+//  configurations.push_back(config);
+//  do
+//    {
+//      config = next(config);
+//      int NumUnpaired=0;
+//      for(int n=0;n<spOrbitals.SP_States.size()/2;n++)
+//	{
+//	  if(getBit(config,2*n)!=getBit(config,2*n+1))
+//	    ++NumUnpaired;
+//	}
+//      if(NumUnpaired==0)
+//	configurations.push_back(config);
+//    }
+//  while(config != configLast);
 }
 
 void System::printConfigurations()
 {
     for (int i = 0; i < configurations.size(); i++)
         cout << bitset<8>(configurations.at(i)) << endl;
+}
+
+//////////////////////////////
+
+void System::CCD_generateMatrices()
+{
+    int size1 = A*(A-1)/2;
+    int size2 = (numberSP-A)*(numberSP-A-1)/2;
+    int index1;
+    int index2;
+    CCD_V.resize(size1,size2);
+    index1 = 0;
+    for (int i = 0; i < A; i++)
+        for (int j = i+1; j < A; j++)
+        {
+            index2 = 0;
+            for (int a = A; a < numberSP; a++)
+                for (int b = a+1; b < numberSP; b++)
+                {
+                    CCD_V(index1,index2) = V2B(a,b,i,j);
+                    index2++;
+                }
+            index1++;
+        }
+    cout << CCD_V << endl << endl;
+
+    CCD_V_tilde.resize(size2,size2);
+    index1 = 0;
+    for (int c = A; c < numberSP; c++)
+        for (int d = c+1; d < numberSP; d++)
+        {
+            index2 = 0;
+            for (int a = A; a < numberSP; a++)
+                for (int b = a+1; b < numberSP; b++)
+                {
+                    CCD_V_tilde(index1,index2) = V2B(a,b,c,d);
+                    index2++;
+                }
+            index1++;
+        }
+    cout << CCD_V_tilde << endl << endl;
+
+    CCD_e.resize(size1,size2);
+    index1 = 0;
+    for (int i = 0; i < A; i++)
+        for (int j = i+1; j < A; j++)
+        {
+            index2 = 0;
+            for (int c = A; c < numberSP; c++)
+                for (int d = c+1; d < numberSP; d++)
+                {
+                    double Ec = spOrbitals.SP_States.at(c).spEnergy;
+                    double Ed = spOrbitals.SP_States.at(d).spEnergy;
+                    double Ei = spOrbitals.SP_States.at(i).spEnergy;
+                    double Ej = spOrbitals.SP_States.at(j).spEnergy;
+                    CCD_e(index1,index2) = 1/(Ei+Ej-Ec-Ed);
+                    index2++;
+                }
+            index1++;
+        }
+    cout << CCD_e << endl << endl;
+}
+
+void System::CCD_calculateTau()
+{
+    int size1 = A*(A-1)/2;
+    int size2 = (numberSP-A)*(numberSP-A-1)/2;
+    CCD_Tau.resize(size1,size2);
+    CCD_Tau = CCD_V;
+    MatrixXd TauHelp;
+    //double factor = 0.5;//TODO -0.0498237
+    //double factor = 0.25;//TODO -0.0481901
+    //double factor = 1;//TODO -0.0534759
+    //double factor = 0;//TODO -0.0466667
+    double factor = 0.5;//TODO
+    TauHelp.resize(size1,size2);
+    int i = 0;
+    do
+    {
+        i++;
+        TauHelp = CCD_Tau;
+        MatrixXd help = CCD_e.array() * TauHelp.array();
+        CCD_Tau = CCD_V + factor * CCD_V_tilde * help;
+    }
+    while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
+    CCD_t = CCD_e.array() * CCD_Tau.array();
+    CCD_deltaE = (CCD_V * CCD_t).trace();
+    cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
 
 //////////////////////////////
@@ -307,9 +403,16 @@ int main()
 //        system.diagonalization();
 //    }
 
-    system.generateConfigurations();
-    system.printConfigurations();
-    cout<<system.getH(0,2)<<endl;
+    system.CCD_generateMatrices();
+    system.CCD_calculateTau();
+    system.MBPT();
+    cout << "MBPT deltaE " << system.MBPT_deltaE << endl;
+    system.diagonalization();
+    cout << "diag deltaE " << -2 + system.spOrbitals.g + system.diag_E_GS << endl;
+
+    //system.generateConfigurations();
+    //system.printConfigurations();
+    //cout<<system.getH(0,2)<<endl;
     // system.MBPT();
     // system.MBPT_printCoefficients();
     // cout << system.MBPT_deltaE << endl;
