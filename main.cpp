@@ -306,48 +306,46 @@ void System::printConfigurations()
 
 void System::CCD_generateMatrices()
 {
-    int size1 = A*(A-1)/2;
-    int size2 = (numberSP-A)*(numberSP-A-1)/2;
+    int size1 = (numberSP-A)*(numberSP-A-1)/2;
+    int size2 = A*(A-1)/2;
     int index1;
     int index2;
     CCD_V.resize(size1,size2);
-    index1 = 0;
+    index2 = 0;
     for (int i = 0; i < A; i++)
         for (int j = i+1; j < A; j++)
         {
-            index2 = 0;
+            index1 = 0;
             for (int a = A; a < numberSP; a++)
                 for (int b = a+1; b < numberSP; b++)
                 {
                     CCD_V(index1,index2) = V2B(a,b,i,j);
-                    index2++;
+                    index1++;
                 }
-            index1++;
+            index2++;
         }
-    cout << CCD_V << endl << endl;
 
     CCD_V_tilde.resize(size2,size2);
-    index1 = 0;
+    index2 = 0;
     for (int c = A; c < numberSP; c++)
         for (int d = c+1; d < numberSP; d++)
         {
-            index2 = 0;
+            index1 = 0;
             for (int a = A; a < numberSP; a++)
                 for (int b = a+1; b < numberSP; b++)
                 {
                     CCD_V_tilde(index1,index2) = V2B(a,b,c,d);
-                    index2++;
+                    index1++;
                 }
-            index1++;
+            index2++;
         }
-    cout << CCD_V_tilde << endl << endl;
 
-    CCD_e.resize(size1,size2);
-    index1 = 0;
+    CCD_e.resize(size2,size1);
+    index2 = 0;
     for (int i = 0; i < A; i++)
         for (int j = i+1; j < A; j++)
         {
-            index2 = 0;
+            index1 = 0;
             for (int c = A; c < numberSP; c++)
                 for (int d = c+1; d < numberSP; d++)
                 {
@@ -356,17 +354,16 @@ void System::CCD_generateMatrices()
                     double Ei = spOrbitals.SP_States.at(i).spEnergy;
                     double Ej = spOrbitals.SP_States.at(j).spEnergy;
                     CCD_e(index1,index2) = 1/(Ei+Ej-Ec-Ed);
-                    index2++;
+                    index1++;
                 }
-            index1++;
+            index2++;
         }
-    cout << CCD_e << endl << endl;
 }
 
 void System::CCD_calculateTau()
 {
-    int size1 = A*(A-1)/2;
-    int size2 = (numberSP-A)*(numberSP-A-1)/2;
+    int size1 = (numberSP-A)*(numberSP-A-1)/2;
+    int size2 = A*(A-1)/2;
     CCD_Tau.resize(size1,size2);
     CCD_Tau = CCD_V;
     MatrixXd TauHelp;
@@ -386,29 +383,29 @@ void System::CCD_calculateTau()
     }
     while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
     CCD_t = CCD_e.array() * CCD_Tau.array();
-    CCD_deltaE = (CCD_V * CCD_t).trace();
-    cout << "CCD  deltaE " << CCD_deltaE << endl;
+    CCD_deltaE = (CCD_t * CCD_V.transpose()).trace();
+    //cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
 
 //////////////////////////////
 
 int main()
 {
-    System system(4,4,0.4);//A, PMax, g
+    System system(4,4,-0.4);//A, PMax, g
 
-//    for (double g = -2.0; g <= 2.0; g += 0.1)
-//    {
-//        system.setG(g);
-//        cout << g << "\t" << system.deltaE() << "\t";
-//        system.diagonalization();
-//    }
+    cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
+    for (double g = -2.0; g <= 2.0; g += 0.1)
+    {
+        system.set_g(g);
+        system.CCD_generateMatrices();
+        system.CCD_calculateTau();
+        system.MBPT();
+        system.diagonalization();
 
-    system.CCD_generateMatrices();
-    system.CCD_calculateTau();
-    system.MBPT();
-    cout << "MBPT deltaE " << system.MBPT_deltaE << endl;
-    system.diagonalization();
-    cout << "diag deltaE " << -2 + system.spOrbitals.g + system.diag_E_GS << endl;
+        cout << g << "\t" << system.MBPT_deltaE << "\t";
+        cout << -2 + system.spOrbitals.g + system.diag_E_GS << "\t";
+        cout << system.CCD_deltaE << endl;
+    }
 
     //system.generateConfigurations();
     //system.printConfigurations();
