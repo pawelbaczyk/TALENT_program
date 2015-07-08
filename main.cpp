@@ -227,7 +227,6 @@ double System::getH(int a,int b)
       if(getBit(ket,i)) ++numKet;
       if(getBit(bra,i)) ++numBra;
     }
-    cout<<bitset<8>(ket)<<endl;
   if(diffCount>4) return 0;
   if(diffCount==4)
     {
@@ -285,6 +284,7 @@ void System::generateConfigurations()
 {
  int config = first(A);
  int configLast = last(spOrbitals.SP_States.size(),A);
+ configurations.clear();
  configurations.push_back(config);
  do
    {
@@ -330,7 +330,7 @@ void System::CCD_generateMatrices()
             index2++;
         }
 
-    CCD_V_tilde.resize(size2,size2);
+    CCD_V_tilde.resize(size1,size1);
     index2 = 0;
     for (int c = A; c < numberSP; c++)
         for (int d = c+1; d < numberSP; d++)
@@ -345,7 +345,7 @@ void System::CCD_generateMatrices()
             index2++;
         }
 
-    CCD_e.resize(size2,size1);
+    CCD_e.resize(size1,size2);
     index2 = 0;
     for (int i = 0; i < A; i++)
         for (int j = i+1; j < A; j++)
@@ -396,7 +396,7 @@ void System::CCD_calculateTau()
 
 int main()
 {
-  System system(4,4,0.4);//A, PMax, g
+  System system(4,8,0.4);//A, PMax, g
 
   cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
   for (double g = -2.0; g <= 2.0; g += 0.1)
