@@ -32,3 +32,8 @@ int next(int x)
    ones         = ((new_smallest/smallest) >> 1) - 1;
    return ripple | ones;
 }
+
+bool getBit(int x,int n)//get the nth bit of integer x
+{
+  return ((1<<n)&x)>>n;
+}

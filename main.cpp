@@ -143,87 +143,6 @@ double System::V1B(int a,int b)
      (spOrbitals.SP_States[a].spin == spOrbitals.SP_States[b].spin))
     return spOrbitals.SP_States[a].p-1;
 }
-void System::generate_H()
-{
-  double g=spOrbitals.g;
-  H.resize(6,6);
-  for(int i=0;i<6;i++)
-    for(int j=0;j<6;j++)
-      {
-	if(i!=j)
-	  H(i,j)=-0.5*g;
-    if(i+j==5)
-	  H(i,j)=0;
-	if(i==j)
-	  H(i,j)=2*(i+1)-g;
-      }
-}
-double System::getH(int a,int b)
-{
-//  int bra=configurations[a];
-//  int ket=configurations[b];
-//  int diffCount=0;
-//  vector<int> OccupiedPos;
-//  vector<int> UnoccupiedPos;
-//  vector<int> NumOrbitalsKet;
-//  vector<int> NumOrbitalsBra;
-//  int numKet(0),numBra(0);
-//  for(int i=0;i<spOrbitals.SP_States.size();i++)
-//    {
-//      if(getBit(bra,i)!=getBit(ket,i))
-//	{
-//	  ++diffCount;
-//	  if(diffCount>4) break;
-//	  if(getBit(ket,i))
-//	    {
-//	      OccupiedPos.push_back(i);
-//	      NumOrbitalsKet.push_back(numKet);
-//	    }
-//	  else
-//	    {
-//	      UnoccupiedPos.push_back(i);
-//	      NumOrbitalsBra.push_back(numBra);
-//	    }
-//	}
-//      if(getBit(ket,i)) ++numKet;
-//      if(getBit(bra,i)) ++numBra;
-//    }
-//  if(diffCount>4) return 0;
-//  if(diffCount==4)
-//    {
-//      int phase=(NumOrbitalsBra[0]+NumOrbitalsBra[1]+NumOrbitalsKet[0]+NumOrbitalsKet[1])%2?-1:1;
-//      return phase*V2B(UnoccupiedPos[0],UnoccupiedPos[1],OccupiedPos[0],OccupiedPos[1]);
-//    }
-//  else if(diffCount==2)
-//    {
-//      int phase=(NumOrbitalsBra[0]+NumOrbitalsKet[0])%2?-1:1;
-//      return phase*V1B(UnoccupiedPos[0],OccupiedPos[0]);
-//    }
-//  else if(diffCount==0)
-//    {
-//      double temp;
-//      for(int i=0;i<spOrbitals.SP_States.size();i++)
-//	{
-//	  if(getBit(ket,i))
-//	    {
-//	      //	      temp+=V1B(i,i)+0.5*
-//	    }
-//	}
-//    }
-//  else
-//    return 0;
-}
-// void System::generate_H()
-// {
-//   int dim=configurations.size();
-//   H.resize(dim,dim);
-//   for(int i=0;i<dim;i++)
-//     for(int j=i;j<dim;j++)
-//       {
-// 	H(i,j)=getH(i,j);
-// 	H(j,i)=H(i,j);
-//       }
-// }
 
 void System::MBPT()
 {
@@ -276,24 +195,110 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
     MBPT_deltaE *= 0.25;
 }
 
+
+
+double System::getH(int a,int b)
+{
+  int bra=configurations[a];
+  int ket=configurations[b];
+  int diffCount=0;
+  vector<int> OccupiedPos;
+  vector<int> UnoccupiedPos;
+  vector<int> NumOrbitalsKet;
+  vector<int> NumOrbitalsBra;
+  int numKet(0),numBra(0);
+  for(int i=0;i<spOrbitals.SP_States.size();i++)
+    {
+      if(getBit(bra,i)!=getBit(ket,i))
+	{
+	  ++diffCount;
+	  if(diffCount>4) break;
+	  if(getBit(ket,i))
+	    {
+	      OccupiedPos.push_back(i);
+	      NumOrbitalsKet.push_back(numKet);
+	    }
+	  else
+	    {
+	      UnoccupiedPos.push_back(i);
+	      NumOrbitalsBra.push_back(numBra);
+	    }
+	}
+      if(getBit(ket,i)) ++numKet;
+      if(getBit(bra,i)) ++numBra;
+    }
+    cout<<bitset<8>(ket)<<endl;
+  if(diffCount>4) return 0;
+  if(diffCount==4)
+    {
+      int phase=(NumOrbitalsBra[0]+NumOrbitalsBra[1]+NumOrbitalsKet[0]+NumOrbitalsKet[1])%2?-1:1;
+      return phase*V2B(UnoccupiedPos[0],UnoccupiedPos[1],OccupiedPos[0],OccupiedPos[1]);
+    }
+  else if(diffCount==2)
+    {
+      int phase=(NumOrbitalsBra[0]+NumOrbitalsKet[0])%2?-1:1;
+      double temp=0;
+      for(int j=0;j<spOrbitals.SP_States.size();j++)
+	{
+	  if(getBit(ket,j))
+	    {
+	      temp+=V2B(UnoccupiedPos[0],j,OccupiedPos[0],j);
+	    }
+	}
+      return phase*(V1B(UnoccupiedPos[0],OccupiedPos[0])+temp);
+    }
+  else if(diffCount==0)
+    {
+      double temp=0;
+      for(int i=0;i<spOrbitals.SP_States.size();i++)
+	{
+	  if(getBit(ket,i))
+	    {
+	      temp+=V1B(i,i);
+	      for(int j=0;j<spOrbitals.SP_States.size();j++)
+		{
+		  if(getBit(ket,j))
+		    {
+		      temp+=0.5*V2B(i,j,i,j);
+		    }
+		}
+	    }
+	}
+      return temp;
+    }
+  else
+    return 0;
+}
+void System::generate_H()
+{
+  generateConfigurations();
+  int dim=configurations.size();
+  H.resize(dim,dim);
+  for(int i=0;i<dim;i++)
+    for(int j=i;j<dim;j++)
+      {
+	H(i,j)=getH(i,j);
+	H(j,i)=H(i,j);
+      }
+}
 void System::generateConfigurations()
 {
-//  int config = first(A);
-//  int configLast = last(spOrbitals.SP_States.size(),A);
-//  configurations.push_back(config);
-//  do
-//    {
-//      config = next(config);
-//      int NumUnpaired=0;
-//      for(int n=0;n<spOrbitals.SP_States.size()/2;n++)
-//	{
-//	  if(getBit(config,2*n)!=getBit(config,2*n+1))
-//	    ++NumUnpaired;
-//	}
-//      if(NumUnpaired==0)
-//	configurations.push_back(config);
-//    }
-//  while(config != configLast);
+ int config = first(A);
+ int configLast = last(spOrbitals.SP_States.size(),A);
+ configurations.push_back(config);
+ do
+   {
+     config = next(config);
+     int NumUnpaired=0;
+     for(int n=0;n<spOrbitals.SP_States.size()/2;n++)
+	{
+	  if(getBit(config,2*n)!=getBit(config,2*n+1))
+	    ++NumUnpaired;
+	}
+     if(NumUnpaired==0)
+	configurations.push_back(config);
+   }
+ while(config != configLast);
 }
 
 void System::printConfigurations()
@@ -391,30 +396,20 @@ void System::CCD_calculateTau()
 
 int main()
 {
-    System system(4,4,-0.4);//A, PMax, g
+  System system(4,4,0.4);//A, PMax, g
 
-    cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
-    for (double g = -2.0; g <= 2.0; g += 0.1)
+  cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
+  for (double g = -2.0; g <= 2.0; g += 0.1)
     {
-        system.set_g(g);
-        system.CCD_generateMatrices();
-        system.CCD_calculateTau();
-        system.MBPT();
-        system.diagonalization();
+      system.set_g(g);
+      system.CCD_generateMatrices();
+      system.CCD_calculateTau();
+      system.MBPT();
+      system.diagonalization();
 
-        cout << g << "\t" << system.MBPT_deltaE << "\t";
-        cout << -2 + system.spOrbitals.g + system.diag_E_GS << "\t";
-        cout << system.CCD_deltaE << endl;
+      cout << g << "\t" << system.MBPT_deltaE << "\t";
+      cout << -2 + system.spOrbitals.g + system.diag_E_GS << "\t";
+      cout << system.CCD_deltaE << endl;
     }
-
-    //system.generateConfigurations();
-    //system.printConfigurations();
-    //cout<<system.getH(0,2)<<endl;
-    // system.MBPT();
-    // system.MBPT_printCoefficients();
-    // cout << system.MBPT_deltaE << endl;
-    // system.diagonalization();
-    // cout << system.diag_E_GS << endl;
-    // system.diag_printCoefficients();
-    return 0;
+  return 0;
 }
