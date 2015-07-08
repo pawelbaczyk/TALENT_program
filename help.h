@@ -7,4 +7,5 @@ int last(int n, int A);
 
 int next(int x);
 
+bool getBit(int x,int n);
 #endif
