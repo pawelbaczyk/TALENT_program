@@ -14,16 +14,11 @@ using namespace Eigen;
 struct PairingSP
 {
 public:
-    PairingSP(int, bool);
+    PairingSP(int _p, bool _spin): p(_p),spin(_spin),spEnergy(_p-1){}
     int p; //from 1
     bool spin; //0 -- spin up, 1 -- spin down
     double spEnergy; //single particle energy
 };
-
-PairingSP::PairingSP(int _p, bool _spin) : p(_p), spin(_spin)
-{
-    spEnergy = p-1;
-}
 
 //////////////////////////////
 
@@ -31,15 +26,12 @@ class Pairing
 {
 public:
     vector<PairingSP> SP_States;
-    void generateSP(int);
-    int PMax;
-    double g;
+    void generateSP_States(int);
 };
 
-void Pairing::generateSP(int _PMax)//generate s.p. states (p orbits, spin up/down)
+void Pairing::generateSP_States(int numberSP)//generate s.p. states (p orbits, spin up/down)
 {
-    PMax = _PMax;
-    for (int p = 1; p <= PMax; p++)
+    for (int p = 1; p <= numberSP/2; p++)
     {
         SP_States.push_back(PairingSP(p,0));//spin up
         SP_States.push_back(PairingSP(p,1));//spin down
@@ -53,12 +45,11 @@ class System
 public:
     System(int,int,double);
     int A; //number of particles, have to be even for pairing
+    int numberSP; //number of single particle orbitals
 
     //pairing
     Pairing spOrbitals;
-    void generateSPOrbitals(int);
     void set_g(double);
-    int numberSP;
 
     //configurations
     void generateConfigurations();
@@ -66,11 +57,12 @@ public:
     vector<int> configurations;
 
     //system
+    double g;
     MatrixXd H;
     double V2B(int,int,int,int);
     double V1B(int,int);
     double getH(int,int);
-    void generate_H();
+    void generateH();
 
     //diagonalization
     void diagonalization();
@@ -94,26 +86,20 @@ public:
     double CCD_deltaE;
 };
 
-void System::generateSPOrbitals(int PMax)//generate s.p. orbitals
+void System::set_g(double _g)//set pairing g value
 {
-    spOrbitals.generateSP(PMax);
-    numberSP = spOrbitals.SP_States.size();
+    g = _g;
 }
 
-void System::set_g(double g)//set pairing g value
+System::System(int _A, int _numberSP, double g) : A(_A),numberSP(_numberSP)//generate system with A particles
 {
-    spOrbitals.g = g;
-}
-
-System::System(int _A, int PMax, double g) : A(_A)//generate system with A particles
-{
-    generateSPOrbitals(PMax);
     set_g(g);
+    spOrbitals.generateSP_States(numberSP);
 }
 
 void System::diagonalization()//perform diagonalization
 {
-  generate_H();
+  generateH();
   SelfAdjointEigenSolver<MatrixXd> solver(H);
   if(solver.info()!=Success) abort();
   diag_E_GS=solver.eigenvalues()[0];
@@ -133,7 +119,7 @@ double System::V2B(int i,int j,int a,int b)//calculate 2body matrix element <ij|
         (spOrbitals.SP_States[a].spin != spOrbitals.SP_States[b].spin) &&//different spin
         (spOrbitals.SP_States[i].p == spOrbitals.SP_States[j].p) &&
         (spOrbitals.SP_States[i].spin != spOrbitals.SP_States[j].spin))
-        return -0.5*spOrbitals.g;
+        return -0.5*g;
     else
         return 0;
 }
@@ -152,6 +138,7 @@ void System::MBPT()
 
 void System::MBPT_calculateCoefficients()//calculate the coefficients for MBPT
 {
+    MBPT_coefficients.clear();
     MBPT_coefficients.push_back(1.0); // C0
     MBPT_coefficients.push_back(MBPT_getCoefficient(2,3,4,5)); // C1
     MBPT_coefficients.push_back(MBPT_getCoefficient(2,3,6,7)); // C2
@@ -197,7 +184,7 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
 
 
 
-double System::getH(int a,int b)
+double System::getH(int a,int b)//return the matrix element between configuration a and b
 {
   int bra=configurations[a];
   int ket=configurations[b];
@@ -207,7 +194,7 @@ double System::getH(int a,int b)
   vector<int> NumOrbitalsKet;
   vector<int> NumOrbitalsBra;
   int numKet(0),numBra(0);
-  for(int i=0;i<spOrbitals.SP_States.size();i++)
+  for(int i=0;i<numberSP;i++)
     {
       if(getBit(bra,i)!=getBit(ket,i))
 	{
@@ -237,7 +224,7 @@ double System::getH(int a,int b)
     {
       int phase=(NumOrbitalsBra[0]+NumOrbitalsKet[0])%2?-1:1;
       double temp=0;
-      for(int j=0;j<spOrbitals.SP_States.size();j++)
+      for(int j=0;j<numberSP;j++)
 	{
 	  if(getBit(ket,j))
 	    {
@@ -249,12 +236,12 @@ double System::getH(int a,int b)
   else if(diffCount==0)
     {
       double temp=0;
-      for(int i=0;i<spOrbitals.SP_States.size();i++)
+      for(int i=0;i<numberSP;i++)
 	{
 	  if(getBit(ket,i))
 	    {
 	      temp+=V1B(i,i);
-	      for(int j=0;j<spOrbitals.SP_States.size();j++)
+	      for(int j=0;j<numberSP;j++)
 		{
 		  if(getBit(ket,j))
 		    {
@@ -268,7 +255,7 @@ double System::getH(int a,int b)
   else
     return 0;
 }
-void System::generate_H()
+void System::generateH()//calculate the hamiltonian matrix
 {
   generateConfigurations();
   int dim=configurations.size();
@@ -283,14 +270,14 @@ void System::generate_H()
 void System::generateConfigurations()
 {
  int config = first(A);
- int configLast = last(spOrbitals.SP_States.size(),A);
+ int configLast = last(numberSP,A);
  configurations.clear();
  configurations.push_back(config);
  do
    {
      config = next(config);
      int NumUnpaired=0;
-     for(int n=0;n<spOrbitals.SP_States.size()/2;n++)
+     for(int n=0;n<numberSP/2;n++)
 	{
 	  if(getBit(config,2*n)!=getBit(config,2*n+1))
 	    ++NumUnpaired;
@@ -311,58 +298,58 @@ void System::printConfigurations()
 
 void System::CCD_generateMatrices()
 {
-    int size1 = (numberSP-A)*(numberSP-A-1)/2;
-    int size2 = A*(A-1)/2;
-    int index1;
-    int index2;
-    CCD_V.resize(size1,size2);
-    index2 = 0;
-    for (int i = 0; i < A; i++)
-        for (int j = i+1; j < A; j++)
-        {
-            index1 = 0;
-            for (int a = A; a < numberSP; a++)
-                for (int b = a+1; b < numberSP; b++)
-                {
-                    CCD_V(index1,index2) = V2B(a,b,i,j);
-                    index1++;
-                }
-            index2++;
-        }
+  int size1 = (numberSP-A)*(numberSP-A-1)/2;
+  int size2 = A*(A-1)/2;;
+  int index1;
+  int index2;
+  CCD_V.resize(size1,size2);
+  index2 = 0;
+  for (int i = 0; i < A; i++)
+    for (int j = i+1; j < A; j++)
+      {
+	index1 = 0;
+	for (int a = A; a < numberSP; a++)
+	  for (int b = a+1; b < numberSP; b++)
+	    {
+	      CCD_V(index1,index2) = V2B(a,b,i,j);
+	      index1++;
+	    }
+	index2++;
+      }
 
-    CCD_V_tilde.resize(size1,size1);
-    index2 = 0;
-    for (int c = A; c < numberSP; c++)
-        for (int d = c+1; d < numberSP; d++)
-        {
-            index1 = 0;
-            for (int a = A; a < numberSP; a++)
-                for (int b = a+1; b < numberSP; b++)
-                {
-                    CCD_V_tilde(index1,index2) = V2B(a,b,c,d);
-                    index1++;
-                }
-            index2++;
-        }
+  CCD_V_tilde.resize(size1,size1);
+  index2 = 0;
+  for (int c = A; c < numberSP; c++)
+    for (int d = c+1; d < numberSP; d++)
+      {
+	index1 = 0;
+	for (int a = A; a < numberSP; a++)
+	  for (int b = a+1; b < numberSP; b++)
+	    {
+	      CCD_V_tilde(index1,index2) = V2B(a,b,c,d);
+	      index1++;
+	    }
+	index2++;
+      }
 
-    CCD_e.resize(size1,size2);
-    index2 = 0;
-    for (int i = 0; i < A; i++)
-        for (int j = i+1; j < A; j++)
-        {
-            index1 = 0;
-            for (int c = A; c < numberSP; c++)
-                for (int d = c+1; d < numberSP; d++)
-                {
-                    double Ec = spOrbitals.SP_States.at(c).spEnergy;
-                    double Ed = spOrbitals.SP_States.at(d).spEnergy;
-                    double Ei = spOrbitals.SP_States.at(i).spEnergy;
-                    double Ej = spOrbitals.SP_States.at(j).spEnergy;
-                    CCD_e(index1,index2) = 1/(Ei+Ej-Ec-Ed);
-                    index1++;
-                }
-            index2++;
-        }
+  CCD_e.resize(size1,size2);
+  index2 = 0;
+  for (int i = 0; i < A; i++)
+    for (int j = i+1; j < A; j++)
+      {
+	index1 = 0;
+	for (int c = A; c < numberSP; c++)
+	  for (int d = c+1; d < numberSP; d++)
+	    {
+	      double Ec = spOrbitals.SP_States.at(c).spEnergy;
+	      double Ed = spOrbitals.SP_States.at(d).spEnergy;
+	      double Ei = spOrbitals.SP_States.at(i).spEnergy;
+	      double Ej = spOrbitals.SP_States.at(j).spEnergy;
+	      CCD_e(index1,index2) = 1/(Ei+Ej-Ec-Ed);
+	      index1++;
+	    }
+	index2++;
+      }
 }
 
 void System::CCD_calculateTau()
@@ -396,20 +383,22 @@ void System::CCD_calculateTau()
 
 int main()
 {
-  System system(4,8,0.4);//A, PMax, g
+  System system(4,8,0.4);//A, numberSP, g
 
   cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
+
   for (double g = -2.0; g <= 2.0; g += 0.1)
     {
       system.set_g(g);
       system.CCD_generateMatrices();
       system.CCD_calculateTau();
       system.MBPT();
+      
       system.diagonalization();
 
-      cout << g << "\t" << system.MBPT_deltaE << "\t";
-      cout << -2 + system.spOrbitals.g + system.diag_E_GS << "\t";
-      cout << system.CCD_deltaE << endl;
+      cout << g << "\t" << system.MBPT_deltaE+2-system.g<< "\t";
+      cout << system.diag_E_GS << "\t";
+      cout << system.CCD_deltaE +2-system.g<< endl;
     }
   return 0;
 }
