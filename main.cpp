@@ -82,7 +82,7 @@ public:
     //CCD
     void CCD_generateMatrices();
     void CCD_calculateTau();
-    MatrixXd CCD_V, CCD_V_tilde, CCD_e, CCD_Tau, CCD_t;
+    MatrixXd CCD_V_ph, CCD_V_pp, CCD_V_hh, CCD_e_ph, CCD_Tau, CCD_t;
     double CCD_deltaE;
 };
 
@@ -298,46 +298,61 @@ void System::printConfigurations()
 
 void System::CCD_generateMatrices()
 {
-  int size1 = (numberSP-A)*(numberSP-A-1)/2;
-  int size2 = A*(A-1)/2;;
+  int size_p = (numberSP-A)*(numberSP-A-1)/2;
+  int size_h = A*(A-1)/2;;
   int index1;
   int index2;
-  CCD_V.resize(size1,size2);
+  CCD_V_ph.resize(size_p,size_h);
   index2 = 0;
   for (int i = 0; i < A; i++)
     for (int j = i+1; j < A; j++)
       {
-	index1 = 0;
+    index1 = 0;
 	for (int a = A; a < numberSP; a++)
 	  for (int b = a+1; b < numberSP; b++)
 	    {
-	      CCD_V(index1,index2) = V2B(a,b,i,j);
-	      index1++;
+          CCD_V_ph(index1,index2) = V2B(a,b,i,j);
+          index1++;
 	    }
-	index2++;
+    index2++;
       }
 
-  CCD_V_tilde.resize(size1,size1);
+  CCD_V_pp.resize(size_p,size_p);
   index2 = 0;
   for (int c = A; c < numberSP; c++)
     for (int d = c+1; d < numberSP; d++)
       {
-	index1 = 0;
+        index1 = 0;
 	for (int a = A; a < numberSP; a++)
-	  for (int b = a+1; b < numberSP; b++)
+      for (int b = a+1; b < numberSP; b++)
 	    {
-	      CCD_V_tilde(index1,index2) = V2B(a,b,c,d);
-	      index1++;
+          CCD_V_pp(index1,index2) = V2B(a,b,c,d);
+          index1++;
 	    }
-	index2++;
+    index2++;
       }
 
-  CCD_e.resize(size1,size2);
+  CCD_V_hh.resize(size_h,size_h);
   index2 = 0;
   for (int i = 0; i < A; i++)
     for (int j = i+1; j < A; j++)
       {
-	index1 = 0;
+        index1 = 0;
+        for (int k = 0; k < A; k++)
+          for (int l = k+1; l < A; l++)
+        {
+          CCD_V_hh(index1,index2) = V2B(k,l,i,j);
+          index1++;
+        }
+    index2++;
+      }
+
+  CCD_e_ph.resize(size_p,size_h);
+  index2 = 0;
+  for (int i = 0; i < A; i++)
+    for (int j = i+1; j < A; j++)
+      {
+        index1 = 0;
 	for (int c = A; c < numberSP; c++)
 	  for (int d = c+1; d < numberSP; d++)
 	    {
@@ -345,11 +360,12 @@ void System::CCD_generateMatrices()
 	      double Ed = spOrbitals.SP_States.at(d).spEnergy;
 	      double Ei = spOrbitals.SP_States.at(i).spEnergy;
 	      double Ej = spOrbitals.SP_States.at(j).spEnergy;
-	      CCD_e(index1,index2) = 1/(Ei+Ej-Ec-Ed);
-	      index1++;
+          CCD_e_ph(index1,index2) = 1/(Ei+Ej-Ec-Ed);
+          index1++;
 	    }
-	index2++;
+    index2++;
       }
+
 }
 
 void System::CCD_calculateTau()
@@ -357,25 +373,35 @@ void System::CCD_calculateTau()
     int size1 = (numberSP-A)*(numberSP-A-1)/2;
     int size2 = A*(A-1)/2;
     CCD_Tau.resize(size1,size2);
-    CCD_Tau = CCD_V;
+    CCD_Tau = CCD_V_ph;
     MatrixXd TauHelp;
     //double factor = 0.5;//TODO -0.0498237
     //double factor = 0.25;//TODO -0.0481901
     //double factor = 1;//TODO -0.0534759
     //double factor = 0;//TODO -0.0466667
-    double factor = 0.5;//TODO
+    double factor = 1;//TODO
     TauHelp.resize(size1,size2);
     int i = 0;
     do
     {
         i++;
         TauHelp = CCD_Tau;
-        MatrixXd help = CCD_e.array() * TauHelp.array();
-        CCD_Tau = CCD_V + factor * CCD_V_tilde * help;
+        MatrixXd help = CCD_e_ph.array() * TauHelp.array();
+        CCD_Tau = CCD_V_ph + factor * CCD_V_pp * help;
+        //cout << endl << i << endl << CCD_Tau << endl;
     }
     while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
-    CCD_t = CCD_e.array() * CCD_Tau.array();
-    CCD_deltaE = (CCD_t * CCD_V.transpose()).trace();
+    i = 0;
+    do
+    {
+        i++;
+        TauHelp = CCD_Tau;
+        MatrixXd help = CCD_e_ph.array() * TauHelp.array();
+        CCD_Tau = CCD_V_ph + factor * CCD_V_pp * help + factor * help * CCD_V_hh;
+    }
+    while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
+    CCD_t = CCD_e_ph.array() * CCD_Tau.array();
+    CCD_deltaE = (CCD_t * CCD_V_ph.transpose()).trace();
     //cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
 
@@ -387,7 +413,7 @@ int main()
 
   cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
 
-  for (double g = -2.0; g <= 2.0; g += 0.1)
+  for (double g = -1.0; g <= 1.0; g += 0.1)
     {
       system.set_g(g);
       system.CCD_generateMatrices();
