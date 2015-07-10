@@ -84,6 +84,21 @@ public:
     void CCD_calculateTau();
     MatrixXd CCD_V, CCD_V_tilde, CCD_e, CCD_Tau, CCD_t;
     double CCD_deltaE;
+
+    //GF
+    void GF_generateMatrices();
+    void GF_diag();
+    double GF_E_GS;
+    MatrixXd GF_Sigma_static;
+    MatrixXd GF_Mat;
+    MatrixXd GF_Mstatic;
+    MatrixXd GF_Mr;
+    MatrixXd GF_Mq;
+    MatrixXd GF_Er;
+    MatrixXd GF_Eq;
+    MatrixXd GF_Z;
+    MatrixXd GF_W;
+    VectorXd GF_e;
 };
 
 void System::set_g(double _g)//set pairing g value
@@ -379,13 +394,136 @@ void System::CCD_calculateTau()
     //cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
 
+
+void System:: GF_generateMatrices()
+{
+  int num_p=numberSP-A;
+  int num_h=A;
+  int dim_2h1p=(num_h*(num_h-1))/2*num_p;
+  int dim_2p1h=(num_p*(num_p-1))/2*num_h;
+  GF_Sigma_static.resize(numberSP,numberSP);
+  GF_Mstatic.resize(numberSP,numberSP);
+  GF_Mr.resize(numberSP,dim_2h1p);
+  GF_Mq.resize(numberSP,dim_2p1h);
+  GF_Er.resize(dim_2h1p,dim_2h1p);
+  GF_Eq.resize(dim_2p1h,dim_2p1h);
+  GF_Mat.resize(numberSP+dim_2h1p+dim_2p1h,numberSP+dim_2h1p+dim_2p1h);
+
+  for(int i=0;i<numberSP;i++)
+    {
+      for(int j=i;j<numberSP;j++)
+	{
+	  GF_Sigma_static(i,j)=0;
+	  for(int k=0;k<A;k++)
+	    {
+	      GF_Sigma_static(i,j)+=V2B(i,k,j,k);
+	    }
+	  GF_Sigma_static(j,i)=GF_Sigma_static(i,j);
+	}
+    }
+  
+  for(int i=0;i<numberSP;i++)
+    {
+      for(int j=i;j<numberSP;j++)
+	{
+	  GF_Mstatic(i,j)=GF_Sigma_static(i,j);
+	  if(i==j)
+	    {
+	      GF_Mstatic(i,i)+=spOrbitals.SP_States[i].spEnergy;
+	    }
+	  else
+	    {
+	      GF_Mstatic(j,i)=GF_Mstatic(i,j);
+	    }
+	}
+    }
+  GF_Er=MatrixXd::Zero(dim_2h1p,dim_2h1p);
+  GF_Eq=MatrixXd::Zero(dim_2p1h,dim_2p1h);
+
+  int j=0;
+  for(int n=A;n<numberSP;n++)
+    {
+      for(int k1=0;k1<A;k1++)
+	for(int k2=k1+1;k2<A;k2++)
+	  {
+	    GF_Er(j,j)=spOrbitals.SP_States[k1].spEnergy+spOrbitals.SP_States[k2].spEnergy-spOrbitals.SP_States[n].spEnergy;
+	    for(int i=0;i<numberSP;i++)
+	      {
+		GF_Mr(i,j)=V2B(i,n,k1,k2);
+	      }
+	    ++j;
+	  }
+    }
+  
+  j=0;  
+  for(int k=0;k<A;k++)
+    {
+      for(int n1=A;n1<numberSP;n1++)
+	for(int n2=n1+1;n2<numberSP;n2++)
+	  {
+	    GF_Eq(j,j)=spOrbitals.SP_States[n1].spEnergy+spOrbitals.SP_States[n2].spEnergy-spOrbitals.SP_States[k].spEnergy;
+	    for(int i=0;i<numberSP;i++)
+	      {
+		GF_Mq(i,j)=V2B(i,k,n1,n2);
+	      }
+	    ++j;
+	  }
+    }
+  GF_Mat.topLeftCorner(numberSP,numberSP)=GF_Mstatic;
+  GF_Mat.block(0,numberSP,numberSP,dim_2h1p)=GF_Mr;
+  GF_Mat.topRightCorner(numberSP,dim_2p1h)=GF_Mq;
+  GF_Mat.block(numberSP,0,dim_2h1p,numberSP)=GF_Mr.adjoint();
+  GF_Mat.bottomLeftCorner(dim_2p1h,numberSP)=GF_Mq.adjoint();
+  GF_Mat.block(numberSP,numberSP,dim_2h1p,dim_2h1p)=GF_Er;
+  GF_Mat.block(numberSP+dim_2h1p,numberSP+dim_2h1p,dim_2p1h,dim_2p1h)=GF_Eq;
+
+  // cout<<GF_Mstatic<<endl;
+  // cout<<"=========================\n";
+  // cout<<GF_Mr<<endl;
+  // cout<<"=========================\n";
+  // cout<<GF_Mq<<endl;
+  // cout<<"=========================\n";
+  // cout<<GF_Er<<endl;
+  // cout<<"=========================\n";
+  // cout<<GF_Eq<<endl;
+  // cout<<"=========================\n";
+  // cout<<GF_Mat<<endl;
+}
+void System::GF_diag()
+{
+  int num_p=numberSP-A;
+  int num_h=A;
+  int dim_2h1p=(num_h*(num_h-1))/2*num_p;
+  int dim_2p1h=(num_p*(num_p-1))/2*num_h;
+  SelfAdjointEigenSolver<MatrixXd> solver(GF_Mat);
+  if(solver.info()!=Success) abort();
+  GF_e=solver.eigenvalues();
+  GF_Z=solver.eigenvectors().topLeftCorner(numberSP,numberSP+dim_2p1h+dim_2h1p);
+  GF_W=solver.eigenvectors().bottomLeftCorner(dim_2p1h+dim_2h1p,numberSP+dim_2p1h+dim_2h1p);
+
+  double sep_energy=(spOrbitals.SP_States[A-1].spEnergy+spOrbitals.SP_States[A].spEnergy)/2;
+  GF_E_GS=0;
+  
+  for(int j=0;j<numberSP;j++)
+    {
+      for(int k=0;k<numberSP+dim_2p1h+dim_2h1p;k++)
+  	{
+  	  if(GF_e[k]<sep_energy)
+  	    {
+  	      GF_E_GS+=(spOrbitals.SP_States[j].spEnergy+GF_e[k])*GF_Z(j,k)*GF_Z(j,k);
+  	    }
+  	}
+    }
+  GF_E_GS*=0.5;
+}
+
 //////////////////////////////
 
 int main()
 {
   System system(4,8,0.4);//A, numberSP, g
 
-  cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << endl;
+  cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << "GF" << endl;
 
   for (double g = -2.0; g <= 2.0; g += 0.1)
     {
@@ -396,9 +534,14 @@ int main()
       
       system.diagonalization();
 
-      cout << g << "\t" << system.MBPT_deltaE+2-system.g<< "\t";
-      cout << system.diag_E_GS << "\t";
-      cout << system.CCD_deltaE +2-system.g<< endl;
+      system.GF_generateMatrices();
+      system.GF_diag();
+
+      cout << g << "\t" << system.MBPT_deltaE<< "\t";
+      cout << system.diag_E_GS-2+system.g << "\t";
+      cout << system.CCD_deltaE<< "\t";
+      cout <<system.GF_E_GS-2+system.g<<endl;
     }
+ 
   return 0;
 }
