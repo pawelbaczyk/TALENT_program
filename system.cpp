@@ -1,6 +1,6 @@
 #include "system.h"
 
-System::System(int _A, int _numberSP) : A(_A), numberSP(_numberSP)//generate system with A particles
+System::System(int _A) : A(_A)//generate system with A particles
 {
 }
 

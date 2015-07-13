@@ -3,29 +3,17 @@
 
 #include "system.h"
 #include "help.h"
+#include <iomanip>
 
 const double hbar = 197;//TODO
 const double m = 938;
 
-class Infinite : public System
-{
-public:
-    Infinite(int, int);
-
-    //parameters
-    //
-
-    //single particle states
-    void generateSP_States(int);
-
-    //configurations
-    void generateConfigurations();
-    void printConfigurations();
-
-    //matrix elements
-    double V1B(int,int);
-    double V2B(int,int,int,int);
-};
+const double V0R = 200;
+const double KR = 1.487;
+const double V0T = -178;
+const double KT = 0.639;
+const double V0S = -91.85;
+const double KS = 0.465;
 
 class SP_Infinite : public SP_State
 {
@@ -38,6 +26,41 @@ public:
     double kz;
     bool spin; //0 -- spin up, 1 -- spin down
     bool isospin; //0 -- neutron, 1 -- proton
+};
+
+class Infinite : public System
+{
+public:
+    Infinite(int,int,double,int);
+
+    //parameters
+    int g_s;
+    double k_F;
+    double rho;
+    int nMax;
+    double L;
+
+    void setRho(double);
+
+    //single particle states
+    void generateSP_States(int);
+    void printSP_States();
+
+    //configurations
+    void generateConfigurations();
+    void printConfigurations();
+
+    //matrix elements
+    double V1B(int,int);
+    double V2B(int,int,int,int);
+    double V2B_sym(int,int,int,int);
+    bool deltaSpin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+    bool deltaIsospin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+    bool deltaSpinIsospin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+
+    //HF
+    void HF_calculateE0();
+    double HF_E0;
 };
 
 #endif

@@ -5,7 +5,17 @@
 
 int main()
 {
-    Infinite infinite(4,8);
+    Infinite infinite(28,2,0.10,3);//A,g_s,rho,nMax
+    //infinite.printSP_States();
+
+    for (double rho = 0.002; rho <= 0.16; rho += 0.002)
+    {
+        infinite.setRho(rho);
+        infinite.HF_calculateE0();
+        cout << infinite.rho << "\t" << infinite.HF_E0 / infinite.A << endl;
+    }
+
+
 //    Pairing pairing(4,8,0.4);//A, numberSP, g
 
 //    cout << "g\t" << "diag\t" << "f_CCD\t" << "2_CCD" << endl;
