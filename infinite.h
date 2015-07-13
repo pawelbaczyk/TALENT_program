@@ -10,13 +10,13 @@ const double m = 938;
 class Infinite : public System
 {
 public:
-    Infinite();
+    Infinite(int, int);
 
     //parameters
     //
 
     //single particle states
-    void generateSP_States();
+    void generateSP_States(int);
 
     //configurations
     void generateConfigurations();
