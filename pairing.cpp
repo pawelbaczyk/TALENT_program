@@ -55,7 +55,12 @@ double Pairing::V2B(int i,int j,int a,int b)//calculate 2body matrix element <ij
             (((SP_Pairing*)SP_States[a])->spin != ((SP_Pairing*)SP_States[b])->spin) &&//different spin
             (((SP_Pairing*)SP_States[i])->p == ((SP_Pairing*)SP_States[j])->p) &&
             (((SP_Pairing*)SP_States[i])->spin != ((SP_Pairing*)SP_States[j])->spin))
-        return -0.5*g;
+    {
+        if ((j-i)*(b-a)>0)
+            return -0.5*g;
+        else
+            return +0.5*g;
+    }
     else
         return 0;
 }

@@ -223,35 +223,87 @@ void System::CCD_calculateTau()
     int size2 = A*(A-1)/2;
     CCD_Tau.resize(size1,size2);
     CCD_Tau = CCD_V_ph;
-    MatrixXd TauHelp;
-    //double factor = 0.5;//TODO -0.0498237
-    //double factor = 0.25;//TODO -0.0481901
-    //double factor = 1;//TODO -0.0534759
-    //double factor = 0;//TODO -0.0466667
-    double factor = 1;//TODO
-    TauHelp.resize(size1,size2);
-    int i = 0;
+    MatrixXd TauIter;
+    TauIter.resize(size1,size2);
+    CCD_t_m.resize(size1,size2);
+    int iter = 0;
+    double CCD_deltaE_iter;
     do
     {
-        i++;
-        TauHelp = CCD_Tau;
-        MatrixXd help = CCD_e_ph.array() * TauHelp.array();
-        CCD_Tau = CCD_V_ph + factor * CCD_V_pp * help;
-        //cout << endl << i << endl << CCD_Tau << endl;
+        iter++;
+        TauIter = CCD_Tau;
+        CCD_t_m = CCD_e_ph.array() * TauIter.array();
+        CCD_deltaE_iter = (CCD_t_m * CCD_V_ph.transpose()).trace();
+//        CCD_Tau = CCD_V_ph
+//                + CCD_V_pp * CCD_t_m;
+//               // + CCD_t_m * CCD_V_hh;
+        int index1;
+        int index2;
+        index2 = 0;
+        for (int i = 0; i < A; i++)
+            for (int j = i+1; j < A; j++)
+            {
+                index1 = 0;
+                for (int a = A; a < numberSP; a++)
+                    for (int b = a+1; b < numberSP; b++)
+                    {
+                        double help = 0.0;
+                        CCD_Tau(index1,index2) = V2B(a,b,i,j);
+                        for (int c = A; c < numberSP; c++)
+                            for (int d = c+1; d < numberSP; d++)
+                                help += V2B(a,b,c,d) * CCD_t(i,j,c,d);
+                        for (int k = 0; k < A; k++)
+                            for (int l = k+1; l < A; l++)
+                                help += V2B(k,l,i,j) * CCD_t(k,l,a,b);
+                        for (int k = 0; k < A; k++)
+                            for (int c = A; c < numberSP; c++)
+                                help += V2B(k,b,c,j) * CCD_t(i,k,a,c)
+                                      - V2B(k,b,c,i) * CCD_t(j,k,a,c)
+                                      - V2B(k,a,c,j) * CCD_t(i,k,b,c)
+                                      + V2B(k,a,c,i) * CCD_t(j,k,b,c);
+                        for (int k = 0; k < A; k++)
+                            for (int l = 0; l < A; l++)
+                                for (int c = A; c < numberSP; c++)
+                                    for (int d = A; c < numberSP; c++)
+                                    {
+                                        help += 0.25 * V2B(k,l,c,d) * CCD_t(i,j,c,d) * CCD_t(k,l,a,b);
+                                        help += V2B(k,l,c,d) * CCD_t(i,k,a,c) * CCD_t(j,l,b,d)
+                                              - V2B(k,l,c,d) * CCD_t(j,k,a,c) * CCD_t(i,l,b,d);
+                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(i,k,d,c) * CCD_t(l,j,a,b)
+                                              +  0.5 * V2B(k,l,c,d) * CCD_t(j,k,d,c) * CCD_t(l,i,a,b);
+                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(l,k,a,c) * CCD_t(i,j,d,b)
+                                              +  0.5 * V2B(k,l,c,d) * CCD_t(l,k,b,c) * CCD_t(i,j,d,a);
+                                    }
+
+                        CCD_Tau(index1,index2) += help;
+                        index1++;
+                    }
+                index2++;
+            }
+        CCD_t_m = CCD_e_ph.array() * CCD_Tau.array();
+        CCD_deltaE = (CCD_t_m * CCD_V_ph.transpose()).trace();
     }
-    while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
-    i = 0;
-    do
-    {
-        i++;
-        TauHelp = CCD_Tau;
-        MatrixXd help = CCD_e_ph.array() * TauHelp.array();
-        CCD_Tau = CCD_V_ph + factor * CCD_V_pp * help + factor * help * CCD_V_hh;
-    }
-    while(abs(CCD_Tau.norm() - TauHelp.norm()) > 1e-6);
-    CCD_t = CCD_e_ph.array() * CCD_Tau.array();
-    CCD_deltaE = (CCD_t * CCD_V_ph.transpose()).trace();
+    while (abs(CCD_deltaE_iter - CCD_deltaE) > 1e-8);
+    //while(abs(CCD_Tau.norm() - TauIter.norm()) > 1e-6);
+    CCD_t_m = CCD_e_ph.array() * CCD_Tau.array();
+    CCD_deltaE = (CCD_t_m * CCD_V_ph.transpose()).trace();
     //cout << "CCD  deltaE " << CCD_deltaE << endl;
+}
+
+double System::CCD_t(int i,int j,int a,int b)
+{
+    if ((i == j) || (a == b))
+        return 0;
+    int h1 = min(i,j);
+    int h2 = max(i,j);
+    int h_sign = 2*(int)(i<j)-1;
+    int p1 = min(a,b) - A;
+    int p2 = max(a,b) - A;
+    int p_sign = 2*(int)(a<b)-1;
+    int nh = (2*A-h1)*(h1+1)/2 - A + h2 - h1 - 1;
+    int B = numberSP - A;
+    int np = (2*B-p1)*(p1+1)/2 - B + p2 - p1 - 1;
+    return h_sign * p_sign * CCD_t_m(np,nh);//TODO check indices
 }
 
 void System:: GF_generateMatrices()

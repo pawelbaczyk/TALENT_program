@@ -4,7 +4,7 @@ CXXFLAGS=-O3
 
 
 DEPS=help.h
-OBJ= main.o help.o system.o pairing.o
+OBJ= main.o help.o system.o pairing.o infinite.o
 
 %.o: %.cpp $(DEPS)
 	$(CXX) ${CXXDEF} -c -o $@ $< $(CXXFLAGS)
