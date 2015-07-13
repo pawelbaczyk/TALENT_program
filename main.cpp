@@ -25,8 +25,7 @@ int main()
         //cout << pairing.diag_E_GS << "\t";
         cout << pairing.CCD_deltaE + pairing.H(0,0) - pairing.diag_E_GS<< "\t";
 
-        pairing.CCD_calculateTau2();
-        cout << pairing.CCD_deltaE + pairing.H(0,0) - pairing.diag_E_GS<< endl;
+
 
 
 
