@@ -6,4 +6,4 @@ set output "g.pdf"
 set xrange [-2.25:2.25]
 set xlabel "g" offset 0,0.5
 set ylabel "GS energy" offset 1
-plot "g.dat" u 1:2 title "PT" w l, "" u 1:3 title "diag" w l
+plot "g.dat" u 1:2 title "PT" w l, "" u 1:3 title "diag" w l, "" u 1:4 title "CCD" w l ,"" u 1:5 title "GF" w l
