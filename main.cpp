@@ -84,11 +84,16 @@ public:
     void CCD_calculateTau();
     MatrixXd CCD_V, CCD_V_tilde, CCD_e, CCD_Tau, CCD_t;
     double CCD_deltaE;
-
+  
+  
     //GF
+    void GF_init();
     void GF_generateMatrices();
     void GF_diag();
+    void GF_cal();
+    void GF_iterate(int);
     double GF_E_GS;
+    double GF_num;
     MatrixXd GF_Sigma_static;
     MatrixXd GF_Mat;
     MatrixXd GF_Mstatic;
@@ -99,6 +104,11 @@ public:
     MatrixXd GF_Z;
     MatrixXd GF_W;
     VectorXd GF_e;
+    int Index_max_h;
+    int Index_min_p;
+    int dim_r,dim_q;
+    double emin,emax;
+    double sep_energy;
 };
 
 void System::set_g(double _g)//set pairing g value
@@ -130,13 +140,18 @@ void System::diag_printCoefficients()//print ground state eigenvector with C_0 =
 
 double System::V2B(int i,int j,int a,int b)//calculate 2body matrix element <ij|V_pairing|ab>
 {
-    if ((spOrbitals.SP_States[a].p == spOrbitals.SP_States[b].p) && //same 'p'
-        (spOrbitals.SP_States[a].spin != spOrbitals.SP_States[b].spin) &&//different spin
-        (spOrbitals.SP_States[i].p == spOrbitals.SP_States[j].p) &&
-        (spOrbitals.SP_States[i].spin != spOrbitals.SP_States[j].spin))
+  if ((spOrbitals.SP_States[a].p == spOrbitals.SP_States[b].p) && //same 'p'
+      (spOrbitals.SP_States[a].spin != spOrbitals.SP_States[b].spin) &&//different spin
+      (spOrbitals.SP_States[i].p == spOrbitals.SP_States[j].p) &&
+      (spOrbitals.SP_States[i].spin != spOrbitals.SP_States[j].spin))
+    {
+      if((i-j)*(a-b)>0)
         return -0.5*g;
-    else
-        return 0;
+      else
+	return 0.5*g;
+    }
+  else
+    return 0;
 }
 double System::V1B(int a,int b)
 {
@@ -147,8 +162,8 @@ double System::V1B(int a,int b)
 
 void System::MBPT()
 {
-    MBPT_calculateCoefficients();
-    MBPT_calculateDeltaE();
+  //  MBPT_calculateCoefficients();
+  MBPT_calculateDeltaE();
 }
 
 void System::MBPT_calculateCoefficients()//calculate the coefficients for MBPT
@@ -185,9 +200,9 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
     {
         for (int j = 0; j < A; j++)
         {
-            for (int a = A; a < spOrbitals.SP_States.size(); a++)
+            for (int a = A; a < numberSP; a++)
             {
-                for (int b = A; b < spOrbitals.SP_States.size(); b++)
+                for (int b = A; b < numberSP; b++)
                 {
                     MBPT_deltaE += V2B(a,b,i,j) * MBPT_getCoefficient(i,j,a,b);
                 }
@@ -378,7 +393,7 @@ void System::CCD_calculateTau()
     //double factor = 0.25;//TODO -0.0481901
     //double factor = 1;//TODO -0.0534759
     //double factor = 0;//TODO -0.0466667
-    double factor = 0.5;//TODO
+    double factor = 1.0;//TODO
     TauHelp.resize(size1,size2);
     int i = 0;
     do
@@ -393,35 +408,253 @@ void System::CCD_calculateTau()
     CCD_deltaE = (CCD_t * CCD_V.transpose()).trace();
     //cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
+// void System::GF_init()
+// {
+//   GF_Z=MatrixXd::Zero(numberSP,numberSP);
+//   GF_e.resize(numberSP,1);
+//   for(int i=0;i<numberSP;i++)
+//     {
+//       GF_Z(i,i)=1;
+//       GF_e(i)=spOrbitals.SP_States[i].spEnergy;
+//     }
+//   GF_Sigma_static.resize(numberSP,numberSP);
+//   GF_Mstatic.resize(numberSP,numberSP);
+//   Index_max_h=A-1;
+//   Index_min_p=A;
+//   emin=spOrbitals.SP_States[0].spEnergy+spOrbitals.SP_States[1].spEnergy-spOrbitals.SP_States[numberSP-1].spEnergy-2;
+//   emax=spOrbitals.SP_States[numberSP-1].spEnergy+spOrbitals.SP_States[numberSP-2].spEnergy-spOrbitals.SP_States[0].spEnergy+2;
+//   sep_energy=0.5*(spOrbitals.SP_States[A-1].spEnergy+spOrbitals.SP_States[A].spEnergy);
+
+// }
+// void System:: GF_generateMatrices()
+// {
+//   dim_r=0;
+//   dim_q=0;
+//   for(int k1=0;k1<=Index_max_h;k1++)
+//     {
+//       for(int k2=k1+1;k2<=Index_max_h;k2++)
+// 	{
+// 	  for(int n=Index_min_p;n<GF_e.rows();n++)
+// 	    {
+// 	      if((GF_e[k1]+GF_e[k2]-GF_e[n])>emin)
+// 		++dim_r;
+// 	    }
+// 	}
+//     }
+//   for(int n1=Index_min_p;n1<GF_e.rows();n1++)
+//     {
+//       for(int n2=n1+1;n2<GF_e.rows();n2++)
+// 	{
+// 	  for(int k=0;k<=Index_max_h;k++)
+// 	    {
+// 	      if((GF_e[n1]+GF_e[n2]-GF_e[k])<emax)
+// 		++dim_q;
+// 	    }
+// 	}
+//     }
+//   //  cout<<dim_r<<"\t"<<dim_q<<endl;
+  
+//   GF_Mr.resize(numberSP,dim_r);
+//   GF_Mq.resize(numberSP,dim_q);
+//   GF_Er.resize(dim_r,dim_r);
+//   GF_Eq.resize(dim_q,dim_q);
+//   GF_Mat.resize(numberSP+dim_r+dim_q,numberSP+dim_r+dim_q);
+
+//   for(int i=0;i<numberSP;i++)
+//     {
+//       for(int j=i;j<numberSP;j++)
+// 	{
+// 	  GF_Sigma_static(i,j)=0;
+// 	  for(int k=0;k<numberSP;k++)
+// 	    {
+// 	      for(int l=0;l<numberSP;l++)
+// 		{
+// 		  double rou_kl=0;
+// 		  for(int index=0;index<=Index_max_h;index++)
+// 		    rou_kl+=GF_Z(k,index)*GF_Z(l,index);
+// 		  GF_Sigma_static(i,j)+=V2B(i,k,j,l)*rou_kl;
+// 		}
+// 	    }
+// 	  GF_Sigma_static(j,i)=GF_Sigma_static(i,j);
+// 	}
+//     }
+//   for(int i=0;i<numberSP;i++)
+//     {
+//       for(int j=i;j<numberSP;j++)
+// 	{
+// 	  GF_Mstatic(i,j)=GF_Sigma_static(i,j);
+// 	  if(i==j)
+// 	    {
+// 		GF_Mstatic(i,i)+=spOrbitals.SP_States[i].spEnergy;
+// 	    }
+// 	  else
+// 	    {
+// 	      GF_Mstatic(j,i)=GF_Mstatic(i,j);
+// 	    }
+// 	}
+//     }
+//   GF_Er=MatrixXd::Zero(dim_r,dim_r);
+//   GF_Eq=MatrixXd::Zero(dim_q,dim_q);
+
+//   int index=0;
+//   for(int k1=0;k1<=Index_max_h;k1++)
+//     {
+//       for(int k2=k1+1;k2<=Index_max_h;k2++)
+//   	{
+//   	  for(int n=Index_min_p;n<GF_e.rows();n++)
+//   	    {
+//   	      if((GF_e[k1]+GF_e[k2]-GF_e[n])>emin)
+//   		{
+//   		  GF_Er(index,index)=GF_e[k1]+GF_e[k2]-GF_e[n];
+//   		  for(int a=0;a<numberSP;a++)
+//   		    {
+//   		      double Mr=0;
+//   		      for(int b=0;b<numberSP;b++)
+//   			{
+//   			  for(int c=0;c<numberSP;c++)
+//   			    {
+//   			      for(int d=0;d<numberSP;d++)
+//   				{
+//   				  Mr+=V2B(a,b,c,d)*GF_Z(b,n)*GF_Z(c,k1)*GF_Z(d,k2);
+//   				}
+//   			    }
+//   			}
+// 		      GF_Mr(a,index)=Mr;
+//   		    }
+// 		  ++index;
+//   		}
+//   	    }
+//   	}
+//     }
+
+//   index=0;
+//   for(int n1=Index_min_p;n1<GF_e.size();n1++)
+//     {
+//       for(int n2=n1+1;n2<GF_e.rows();n2++)
+//   	{
+//   	  for(int k=0;k<=Index_max_h;k++)
+//   	    {
+//   	      if((GF_e[n1]+GF_e[n2]-GF_e[k])<emax)
+//   		{
+//   		  GF_Eq(index,index)=GF_e[n1]+GF_e[n2]-GF_e[k];
+//   		  for(int a=0;a<numberSP;a++)
+//   		    {
+//   		      double Mq=0;
+//   		      for(int b=0;b<numberSP;b++)
+//   			{
+//   			  for(int c=0;c<numberSP;c++)
+//   			    {
+//   			      for(int d=0;d<numberSP;d++)
+//   				{
+//   				  Mq+=V2B(a,b,c,d)*GF_Z(b,k)*GF_Z(c,n1)*GF_Z(d,n2);
+//   				}
+//   			    }
+//   			}
+//   		      GF_Mq(a,index)=Mq;
+//   		    }
+// 		  ++index;
+//   		}
+//   	    }
+//   	}
+//     }
+  
+//   GF_Mat.topLeftCorner(numberSP,numberSP)=GF_Mstatic;
+//   GF_Mat.block(0,numberSP,numberSP,dim_r)=GF_Mr;
+//   GF_Mat.topRightCorner(numberSP,dim_q)=GF_Mq;
+//   GF_Mat.block(numberSP,0,dim_r,numberSP)=GF_Mr.adjoint();
+//   GF_Mat.bottomLeftCorner(dim_q,numberSP)=GF_Mq.adjoint();
+//   GF_Mat.block(numberSP,numberSP,dim_r,dim_r)=GF_Er;
+//   GF_Mat.block(numberSP+dim_r,numberSP+dim_r,dim_q,dim_q)=GF_Eq;
+
+//   // cout<<GF_Mstatic<<endl;
+//   // cout<<"=========================\n";
+//   // cout<<GF_Mr<<endl;
+//   // cout<<"=========================\n";
+//   // cout<<GF_Mq<<endl;
+//   // cout<<"=========================\n";
+//   // cout<<GF_Er<<endl;
+//   // cout<<"=========================\n";
+//   // cout<<GF_Eq<<endl;
+//   // cout<<"=========================\n";
+//   //  cout<<GF_Mat<<endl;
+// }
 
 
-void System:: GF_generateMatrices()
+void System::GF_init()
 {
-  int num_p=numberSP-A;
-  int num_h=A;
-  int dim_2h1p=(num_h*(num_h-1))/2*num_p;
-  int dim_2p1h=(num_p*(num_p-1))/2*num_h;
+  GF_Z=MatrixXd::Zero(numberSP,numberSP);
+  GF_e.resize(numberSP,1);
+  for(int i=0;i<numberSP;i++)
+    {
+      GF_Z(i,i)=1;
+      if(i<A)
+	GF_e(i)=spOrbitals.SP_States[i].spEnergy-g/2;
+      else
+	GF_e(i)=spOrbitals.SP_States[i].spEnergy;
+    }
   GF_Sigma_static.resize(numberSP,numberSP);
   GF_Mstatic.resize(numberSP,numberSP);
-  GF_Mr.resize(numberSP,dim_2h1p);
-  GF_Mq.resize(numberSP,dim_2p1h);
-  GF_Er.resize(dim_2h1p,dim_2h1p);
-  GF_Eq.resize(dim_2p1h,dim_2p1h);
-  GF_Mat.resize(numberSP+dim_2h1p+dim_2p1h,numberSP+dim_2h1p+dim_2p1h);
+  Index_max_h=A-1;
+  Index_min_p=A;
+  emin=spOrbitals.SP_States[0].spEnergy+spOrbitals.SP_States[1].spEnergy-spOrbitals.SP_States[numberSP-1].spEnergy-1-g;
+  emax=spOrbitals.SP_States[numberSP-1].spEnergy+spOrbitals.SP_States[numberSP-2].spEnergy-spOrbitals.SP_States[0].spEnergy+1+g/2;
+  sep_energy=0.5*(spOrbitals.SP_States[A-1].spEnergy-g/2+spOrbitals.SP_States[A].spEnergy);
+
+}
+void System:: GF_generateMatrices()
+{
+  dim_r=0;
+  dim_q=0;
+  for(int k1=0;k1<=Index_max_h;k1++)
+    {
+      for(int k2=k1+1;k2<=Index_max_h;k2++)
+	{
+	  for(int n=Index_min_p;n<GF_e.rows();n++)
+	    {
+	      if((GF_e[k1]+GF_e[k2]-GF_e[n])>emin)
+		++dim_r;
+	    }
+	}
+    }
+  for(int n1=Index_min_p;n1<GF_e.rows();n1++)
+    {
+      for(int n2=n1+1;n2<GF_e.rows();n2++)
+	{
+	  for(int k=0;k<=Index_max_h;k++)
+	    {
+	      if((GF_e[n1]+GF_e[n2]-GF_e[k])<emax)
+		++dim_q;
+	    }
+	}
+    }
+  //  cout<<dim_r<<"\t"<<dim_q<<endl;
+  
+  GF_Mr.resize(numberSP,dim_r);
+  GF_Mq.resize(numberSP,dim_q);
+  GF_Er.resize(dim_r,dim_r);
+  GF_Eq.resize(dim_q,dim_q);
+  GF_Mat.resize(numberSP+dim_r+dim_q,numberSP+dim_r+dim_q);
 
   for(int i=0;i<numberSP;i++)
     {
       for(int j=i;j<numberSP;j++)
 	{
 	  GF_Sigma_static(i,j)=0;
-	  for(int k=0;k<A;k++)
+	  for(int k=0;k<numberSP;k++)
 	    {
-	      GF_Sigma_static(i,j)+=V2B(i,k,j,k);
+	      for(int l=0;l<numberSP;l++)
+		{
+		  double rou_kl=0;
+		  for(int index=0;index<=Index_max_h;index++)
+		    rou_kl+=GF_Z(k,index)*GF_Z(l,index);
+		  GF_Sigma_static(i,j)+=V2B(i,k,j,l)*rou_kl;
+		}
+	      if(k<A)
+		GF_Sigma_static(i,j)-=V2B(i,k,j,k);
 	    }
 	  GF_Sigma_static(j,i)=GF_Sigma_static(i,j);
 	}
     }
-  
   for(int i=0;i<numberSP;i++)
     {
       for(int j=i;j<numberSP;j++)
@@ -429,7 +662,10 @@ void System:: GF_generateMatrices()
 	  GF_Mstatic(i,j)=GF_Sigma_static(i,j);
 	  if(i==j)
 	    {
-	      GF_Mstatic(i,i)+=spOrbitals.SP_States[i].spEnergy;
+	      if(i<A)
+		GF_Mstatic(i,i)+=spOrbitals.SP_States[i].spEnergy-g/2;
+	      else
+		GF_Mstatic(i,i)+=spOrbitals.SP_States[i].spEnergy;
 	    }
 	  else
 	    {
@@ -437,45 +673,78 @@ void System:: GF_generateMatrices()
 	    }
 	}
     }
-  GF_Er=MatrixXd::Zero(dim_2h1p,dim_2h1p);
-  GF_Eq=MatrixXd::Zero(dim_2p1h,dim_2p1h);
+  GF_Er=MatrixXd::Zero(dim_r,dim_r);
+  GF_Eq=MatrixXd::Zero(dim_q,dim_q);
 
-  int j=0;
-  for(int n=A;n<numberSP;n++)
+  int index=0;
+  for(int k1=0;k1<=Index_max_h;k1++)
     {
-      for(int k1=0;k1<A;k1++)
-	for(int k2=k1+1;k2<A;k2++)
-	  {
-	    GF_Er(j,j)=spOrbitals.SP_States[k1].spEnergy+spOrbitals.SP_States[k2].spEnergy-spOrbitals.SP_States[n].spEnergy;
-	    for(int i=0;i<numberSP;i++)
-	      {
-		GF_Mr(i,j)=V2B(i,n,k1,k2);
-	      }
-	    ++j;
-	  }
+      for(int k2=k1+1;k2<=Index_max_h;k2++)
+  	{
+  	  for(int n=Index_min_p;n<GF_e.rows();n++)
+  	    {
+  	      if((GF_e[k1]+GF_e[k2]-GF_e[n])>emin)
+  		{
+  		  GF_Er(index,index)=GF_e[k1]+GF_e[k2]-GF_e[n];
+  		  for(int a=0;a<numberSP;a++)
+  		    {
+  		      double Mr=0;
+  		      for(int b=0;b<numberSP;b++)
+  			{
+  			  for(int c=0;c<numberSP;c++)
+  			    {
+  			      for(int d=0;d<numberSP;d++)
+  				{
+  				  Mr+=V2B(a,b,c,d)*GF_Z(b,n)*GF_Z(c,k1)*GF_Z(d,k2);
+  				}
+  			    }
+  			}
+		      GF_Mr(a,index)=Mr;
+  		    }
+		  ++index;
+  		}
+  	    }
+  	}
     }
-  
-  j=0;  
-  for(int k=0;k<A;k++)
+
+  index=0;
+  for(int n1=Index_min_p;n1<GF_e.size();n1++)
     {
-      for(int n1=A;n1<numberSP;n1++)
-	for(int n2=n1+1;n2<numberSP;n2++)
-	  {
-	    GF_Eq(j,j)=spOrbitals.SP_States[n1].spEnergy+spOrbitals.SP_States[n2].spEnergy-spOrbitals.SP_States[k].spEnergy;
-	    for(int i=0;i<numberSP;i++)
-	      {
-		GF_Mq(i,j)=V2B(i,k,n1,n2);
-	      }
-	    ++j;
-	  }
+      for(int n2=n1+1;n2<GF_e.rows();n2++)
+  	{
+  	  for(int k=0;k<=Index_max_h;k++)
+  	    {
+  	      if((GF_e[n1]+GF_e[n2]-GF_e[k])<emax)
+  		{
+  		  GF_Eq(index,index)=GF_e[n1]+GF_e[n2]-GF_e[k];
+  		  for(int a=0;a<numberSP;a++)
+  		    {
+  		      double Mq=0;
+  		      for(int b=0;b<numberSP;b++)
+  			{
+  			  for(int c=0;c<numberSP;c++)
+  			    {
+  			      for(int d=0;d<numberSP;d++)
+  				{
+  				  Mq+=V2B(a,b,c,d)*GF_Z(b,k)*GF_Z(c,n1)*GF_Z(d,n2);
+  				}
+  			    }
+  			}
+		      GF_Mq(a,index)=Mq;
+  		    }
+		  ++index;
+  		}
+  	    }
+  	}
     }
+  GF_Mat=MatrixXd::Zero(numberSP+dim_r+dim_q,numberSP+dim_r+dim_q);
   GF_Mat.topLeftCorner(numberSP,numberSP)=GF_Mstatic;
-  GF_Mat.block(0,numberSP,numberSP,dim_2h1p)=GF_Mr;
-  GF_Mat.topRightCorner(numberSP,dim_2p1h)=GF_Mq;
-  GF_Mat.block(numberSP,0,dim_2h1p,numberSP)=GF_Mr.adjoint();
-  GF_Mat.bottomLeftCorner(dim_2p1h,numberSP)=GF_Mq.adjoint();
-  GF_Mat.block(numberSP,numberSP,dim_2h1p,dim_2h1p)=GF_Er;
-  GF_Mat.block(numberSP+dim_2h1p,numberSP+dim_2h1p,dim_2p1h,dim_2p1h)=GF_Eq;
+  GF_Mat.block(0,numberSP,numberSP,dim_r)=GF_Mr;
+  GF_Mat.topRightCorner(numberSP,dim_q)=GF_Mq;
+  GF_Mat.block(numberSP,0,dim_r,numberSP)=GF_Mr.adjoint();
+  GF_Mat.bottomLeftCorner(dim_q,numberSP)=GF_Mq.adjoint();
+  GF_Mat.block(numberSP,numberSP,dim_r,dim_r)=GF_Er;
+  GF_Mat.block(numberSP+dim_r,numberSP+dim_r,dim_q,dim_q)=GF_Eq;
 
   // cout<<GF_Mstatic<<endl;
   // cout<<"=========================\n";
@@ -487,34 +756,89 @@ void System:: GF_generateMatrices()
   // cout<<"=========================\n";
   // cout<<GF_Eq<<endl;
   // cout<<"=========================\n";
-  // cout<<GF_Mat<<endl;
+  //  cout<<GF_Mat<<endl;
 }
 void System::GF_diag()
 {
-  int num_p=numberSP-A;
-  int num_h=A;
-  int dim_2h1p=(num_h*(num_h-1))/2*num_p;
-  int dim_2p1h=(num_p*(num_p-1))/2*num_h;
   SelfAdjointEigenSolver<MatrixXd> solver(GF_Mat);
   if(solver.info()!=Success) abort();
-  GF_e=solver.eigenvalues();
-  GF_Z=solver.eigenvectors().topLeftCorner(numberSP,numberSP+dim_2p1h+dim_2h1p);
-  GF_W=solver.eigenvectors().bottomLeftCorner(dim_2p1h+dim_2h1p,numberSP+dim_2p1h+dim_2h1p);
-
-  double sep_energy=(spOrbitals.SP_States[A-1].spEnergy+spOrbitals.SP_States[A].spEnergy)/2;
+  VectorXd GF_e_temp;
+  MatrixXd GF_Z_temp;
+  GF_e_temp=solver.eigenvalues();
+  GF_Z_temp=solver.eigenvectors().topLeftCorner(numberSP,numberSP+dim_r+dim_q);
+  GF_W=solver.eigenvectors().bottomLeftCorner(dim_r+dim_q,numberSP+dim_r+dim_q);
+  int dim=0;
+  for(int i=0;i<GF_Z_temp.cols();i++)
+    {
+      if(GF_Z_temp.col(i).squaredNorm()>1e-5)
+	dim++;
+    }
+  GF_e.resize(dim,1);
+  GF_Z.resize(numberSP,dim);
+  int count=0;
+  for(int i=0;i<GF_Z_temp.cols();i++)
+    {
+      if(GF_Z_temp.col(i).squaredNorm()>1e-5)
+	{
+	  GF_e(count)=GF_e_temp(i);
+	  GF_Z.col(count)=GF_Z_temp.col(i);
+	  count++;
+	}
+    }
+  for(int i=0;i<GF_e.rows();i++)
+    {
+      if(GF_e[i]<sep_energy)
+	{
+	  Index_max_h=i;
+	  Index_min_p=i+1;
+	}
+      else
+	{
+	  break;
+	}
+    }
+}
+void System::GF_cal()
+{
   GF_E_GS=0;
   
   for(int j=0;j<numberSP;j++)
     {
-      for(int k=0;k<numberSP+dim_2p1h+dim_2h1p;k++)
+      for(int k=0;k<=Index_max_h;k++)
   	{
-  	  if(GF_e[k]<sep_energy)
-  	    {
-  	      GF_E_GS+=(spOrbitals.SP_States[j].spEnergy+GF_e[k])*GF_Z(j,k)*GF_Z(j,k);
-  	    }
+	  GF_E_GS+=(spOrbitals.SP_States[j].spEnergy+GF_e[k])*GF_Z(j,k)*GF_Z(j,k);
   	}
     }
   GF_E_GS*=0.5;
+
+  GF_num=0;
+  for(int k=0;k<=Index_max_h;k++)
+    {
+      double Sh=0;
+      for(int j=0;j<numberSP;j++)
+	{
+	  Sh+=GF_Z(j,k)*GF_Z(j,k);
+	}
+      //      cout<<GF_e[k]<<"\t"<<Sh<<endl;
+      GF_num+=Sh;
+    }
+}
+void System::GF_iterate(int max_num_iter)
+{
+  GF_init();
+  double delta=0;
+  int i=0;
+  GF_E_GS=0;
+  do
+    {
+      double E_GS_old=GF_E_GS;
+      GF_generateMatrices();
+      GF_diag();
+      GF_cal();
+      delta=abs(GF_E_GS-E_GS_old);
+      //      cout<<GF_E_GS<<"\t"<<GF_num<<"\t"<<delta<<endl;
+      ++i;
+    }while(delta>1e-6&&i<max_num_iter);
 }
 
 //////////////////////////////
@@ -522,26 +846,36 @@ void System::GF_diag()
 int main()
 {
   System system(4,8,0.4);//A, numberSP, g
-
-  cout << "g\t" << "MBPT\t" << "diag\t" << "CCD" << "GF" << endl;
-
-  for (double g = -2.0; g <= 2.0; g += 0.1)
+ //  cout << "g\t" << "MBPT\t" << "diag\t" << "CCD\t" << "GF" << endl;
+  
+  for (double g = -1.0; g <= 1.0; g += 0.1)
     {
       system.set_g(g);
       system.CCD_generateMatrices();
       system.CCD_calculateTau();
       system.MBPT();
-      
       system.diagonalization();
-
-      system.GF_generateMatrices();
-      system.GF_diag();
+      system.GF_iterate(1);
 
       cout << g << "\t" << system.MBPT_deltaE<< "\t";
       cout << system.diag_E_GS-2+system.g << "\t";
       cout << system.CCD_deltaE<< "\t";
-      cout <<system.GF_E_GS-2+system.g<<endl;
+
+
+      cout<<system.GF_E_GS-2+system.g<<"\t"<<system.GF_num<<endl;
     }
- 
+
+  // system.CCD_generateMatrices();
+  // system.CCD_calculateTau();
+  // cout << system.CCD_deltaE+2-system.g<<endl;
+  
+  // system.diagonalization();
+  // cout << system.diag_E_GS<<endl;
+
+  // system.MBPT();
+  // cout<<system.MBPT_deltaE+2-system.g<<endl;
+    
+  // system.GF_iterate(10);
+  // cout<<system.GF_E_GS<<"\t"<<system.GF_num<<endl;
   return 0;
 }
