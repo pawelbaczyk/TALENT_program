@@ -1,7 +1,8 @@
 #include "pairing.h"
 
-Pairing::Pairing(int _A, int _numberSP, double _g) : System(_A, _numberSP)
+Pairing::Pairing(int _A, int _numberSP, double _g) : System(_A)
 {
+    numberSP = _numberSP;
     g =_g;
     generateSP_States(numberSP);
 }

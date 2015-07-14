@@ -20,7 +20,7 @@ class System
 {
 public:
     virtual ~System(){}
-    System(int,int);
+    System(int);
     int A; //number of particles, have to be even for pairing
     int numberSP; //number of single particle orbitals
 
