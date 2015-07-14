@@ -1,11 +1,12 @@
 #include "infinite.h"
 
-Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A)
+Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_x(100),gauss_w(100)
 {
     g_s = _g_s;
     rho = _rho;
     nMax = _nMax;
     generateSP_States(_A);
+    gauleg(-1,1,gauss_x,gauss_w);
 }
 
 void Infinite::generateSP_States(int A)
@@ -130,3 +131,38 @@ void Infinite::HF_calculateE0()
     }
 }
 
+double Infinite::HF_exact_f(double r)
+{
+  int vs;
+  int vt;
+  if(g_s==4)
+    {
+      vs=2;
+      vt=2;
+    }
+  else
+    {
+      vs=2;
+      vt=1;
+    }
+  double VR=V0R*exp(-KR*r*r);
+  double VS=V0S*exp(-KS*r*r);
+  double VT=V0T*exp(-KT*r*r);
+  double V1=0.5*VR+0.25*VT+0.25*VS;
+  double V2=0.25*VT-0.25*VS;
+  double V3=0.25*VS-0.25*VT;
+  double V4=-0.5*VR-0.25*VT-0.25*VS;
+  return vs*vs*vt*vt*V1 + vs*vt*vt*V2 + vt*vs*vs*V3 + vs*vt*V4 -
+         pow(3*J1(k_F*r)/(k_F*r),2)*
+         (vs*vs*vt*vt*V4 + vs*vt*vt*V3 + vt*vs*vs*V2 + vs*vt*V1);
+}
+void Infinite::HF_cal_exact_E0()
+{
+  HF_exact_E0=0.3 * hbar*hbar /m * k_F*k_F;
+  for(int i=0;i<gauss_x.size();i++)
+    {
+      double temp=M_PI*0.25*(gauss_x[i] + 1);
+      double r=tan(temp);
+      HF_exact_E0+=rho * 2*M_PI/(g_s*g_s) * r*r * HF_exact_f(r) * gauss_w[i]* M_PI*0.25/pow(cos(temp),2);
+    }
+}

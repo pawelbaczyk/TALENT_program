@@ -40,6 +40,10 @@ public:
     int nMax;
     double L;
 
+    //gauss-legendre points and weights in range [-1,1]
+    vector<double> gauss_x;
+    vector<double> gauss_w;
+
     void setRho(double);
 
     //single particle states
@@ -61,6 +65,11 @@ public:
     //HF
     void HF_calculateE0();
     double HF_E0;
+
+    //exact HF
+    double HF_exact_f(double r);
+    void HF_cal_exact_E0();
+    double HF_exact_E0;
 };
 
 #endif
