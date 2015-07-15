@@ -7,6 +7,7 @@ Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_
     nMax = _nMax;
     generateSP_States(_A);
     gauleg(-1,1,gauss_x,gauss_w);
+    map_generateV2B();
 }
 
 void Infinite::generateSP_States(int A)
@@ -34,6 +35,7 @@ void Infinite::generateSP_States(int A)
                             SP_States.push_back(new SP_Infinite(kx,ky,kz,1,1));
                         }
                     }
+    numberSP = SP_States.size();
 }
 
 void Infinite::setRho(double _rho)
@@ -46,8 +48,8 @@ void Infinite::printSP_States()
 {
     for (int i = 0; i < SP_States.size(); i++)
     {
-        SP_Infinite* state = (SP_Infinite*)SP_States[i];
-        cout << std::fixed << i+1 << "\t" << state->spEnergy << "\t"
+       SP_Infinite* state = (SP_Infinite*)SP_States[i];
+       cout << std::fixed << i+1 << "\t" << state->spEnergy << "\t"
              << state->kx << "\t" << state->ky << "\t" << state->kz << "\t"
                 << (state->spin == 0 ? "+" : "-") << "\t" << (state->isospin == 0 ? "n" : "p")
                    << endl;
@@ -74,7 +76,50 @@ double Infinite::V1B(int a,int b)
 
 double Infinite::V2B(int p,int q,int r,int s)
 {
-    return V2B_sym(p, q, r, s) - V2B_sym(p, q, s, r);
+    char key[100];
+    int a, b, c, d;
+    int sign = +1;
+    if (p == q)
+        return 0.0;
+    else if (p < q)
+    {
+        a = p;
+        b = q;
+    }
+    else
+    {
+        a = q;
+        b = p;
+        sign *= -1;
+    }
+    if (r == s)
+        return 0.0;
+    else if (r < s)
+    {
+        c = r;
+        d = s;
+    }
+    else
+    {
+        c = s;
+        d = r;
+        sign *= -1;
+    }
+    if (p+q <= r+s)
+        sprintf(key,"%.4d%.4d%.4d%.4d",a,b,c,d);
+    else
+        sprintf(key,"%.4d%.4d%.4d%.4d",c,d,a,b);
+    map<string,double>::iterator it;
+    it = map_V2B.find(string(key));
+
+    cout << it->second << "\t" << V2B_sym(a,b,c,d)-V2B_sym(a,b,d,c) << endl;
+
+
+    if (it != map_V2B.end())
+        return (it->second)*sign;
+    else
+        return 0.0;
+
 }
 
 double Infinite::V2B_sym(int p, int q, int r, int s)
@@ -165,4 +210,32 @@ void Infinite::HF_cal_exact_E0()
       double r=tan(temp);
       HF_exact_E0+=rho * 2*M_PI/(g_s*g_s) * r*r * HF_exact_f(r) * gauss_w[i]* M_PI*0.25/pow(cos(temp),2);
     }
+}
+
+void Infinite::map_generateV2B()
+{
+    if (numberSP > 10000)
+    {
+        cout << "Too many single particle states! Change map_generateV2B function" << endl;
+        exit(1);
+    }
+    map_V2B.clear();
+    for (int a = 0; a < numberSP; a++)
+        for (int b = a+1; b < numberSP; b++)
+            for (int c = 0; c < numberSP; c++)
+                for (int d = max(a+b-c,c+1); d < numberSP; d++)
+                {
+                    char key[100];
+                    sprintf(key,"%.4d%.4d%.4d%.4d",a,b,c,d);
+                    SP_Infinite* A = (SP_Infinite*)SP_States[a];
+                    SP_Infinite* B = (SP_Infinite*)SP_States[b];
+                    SP_Infinite* C = (SP_Infinite*)SP_States[c];
+                    SP_Infinite* D = (SP_Infinite*)SP_States[d];
+                    if ((A->kx + B->kx == C->kx + D->kx) &&
+                        (A->ky + B->ky == C->ky + D->ky) &&
+                        (A->kz + B->kz == C->kz + D->kz) &&
+                        (A->spin + B->spin == C->spin + D->spin) &&
+                        (A->isospin + B->isospin == C->isospin + D->isospin))
+                        map_V2B.insert(pair<string,double>(string(key),V2B_sym(a,b,c,d)-V2B_sym(a,b,d,c)));
+                }
 }

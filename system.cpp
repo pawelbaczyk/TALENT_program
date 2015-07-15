@@ -148,7 +148,7 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
 void System::CCD_generateMatrices()
 {
     int size_p = (numberSP-A)*(numberSP-A-1)/2;
-    int size_h = A*(A-1)/2;;
+    int size_h = A*(A-1)/2;
     int index1;
     int index2;
     CCD_V_ph.resize(size_p,size_h);
@@ -235,8 +235,8 @@ void System::CCD_calculateTau()
         CCD_t_m = CCD_e_ph.array() * TauIter.array();
         CCD_deltaE_iter = (CCD_t_m * CCD_V_ph.transpose()).trace();
 //        CCD_Tau = CCD_V_ph
-//                + CCD_V_pp * CCD_t_m;
-//               // + CCD_t_m * CCD_V_hh;
+//                + CCD_V_pp * CCD_t_m
+//                + CCD_t_m * CCD_V_hh;
         int index1;
         int index2;
         index2 = 0;
@@ -255,25 +255,25 @@ void System::CCD_calculateTau()
                         for (int k = 0; k < A; k++)
                             for (int l = k+1; l < A; l++)
                                 help += V2B(k,l,i,j) * CCD_t(k,l,a,b);
-                        for (int k = 0; k < A; k++)
-                            for (int c = A; c < numberSP; c++)
-                                help += V2B(k,b,c,j) * CCD_t(i,k,a,c)
-                                      - V2B(k,b,c,i) * CCD_t(j,k,a,c)
-                                      - V2B(k,a,c,j) * CCD_t(i,k,b,c)
-                                      + V2B(k,a,c,i) * CCD_t(j,k,b,c);
-                        for (int k = 0; k < A; k++)
-                            for (int l = 0; l < A; l++)
-                                for (int c = A; c < numberSP; c++)
-                                    for (int d = A; c < numberSP; c++)
-                                    {
-                                        help += 0.25 * V2B(k,l,c,d) * CCD_t(i,j,c,d) * CCD_t(k,l,a,b);
-                                        help += V2B(k,l,c,d) * CCD_t(i,k,a,c) * CCD_t(j,l,b,d)
-                                              - V2B(k,l,c,d) * CCD_t(j,k,a,c) * CCD_t(i,l,b,d);
-                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(i,k,d,c) * CCD_t(l,j,a,b)
-                                              +  0.5 * V2B(k,l,c,d) * CCD_t(j,k,d,c) * CCD_t(l,i,a,b);
-                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(l,k,a,c) * CCD_t(i,j,d,b)
-                                              +  0.5 * V2B(k,l,c,d) * CCD_t(l,k,b,c) * CCD_t(i,j,d,a);
-                                    }
+//                        for (int k = 0; k < A; k++)
+//                            for (int c = A; c < numberSP; c++)
+//                                help += V2B(k,b,c,j) * CCD_t(i,k,a,c)
+//                                      - V2B(k,b,c,i) * CCD_t(j,k,a,c)
+//                                      - V2B(k,a,c,j) * CCD_t(i,k,b,c)
+//                                      + V2B(k,a,c,i) * CCD_t(j,k,b,c);
+//                        for (int k = 0; k < A; k++)
+//                            for (int l = 0; l < A; l++)
+//                                for (int c = A; c < numberSP; c++)
+//                                    for (int d = A; c < numberSP; c++)
+//                                    {
+//                                        help += 0.25 * V2B(k,l,c,d) * CCD_t(i,j,c,d) * CCD_t(k,l,a,b);
+//                                        help += V2B(k,l,c,d) * CCD_t(i,k,a,c) * CCD_t(j,l,b,d)
+//                                              - V2B(k,l,c,d) * CCD_t(j,k,a,c) * CCD_t(i,l,b,d);
+//                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(i,k,d,c) * CCD_t(l,j,a,b)
+//                                              +  0.5 * V2B(k,l,c,d) * CCD_t(j,k,d,c) * CCD_t(l,i,a,b);
+//                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(l,k,a,c) * CCD_t(i,j,d,b)
+//                                              +  0.5 * V2B(k,l,c,d) * CCD_t(l,k,b,c) * CCD_t(i,j,d,a);
+//                                    }
 
                         CCD_Tau(index1,index2) += help;
                         index1++;

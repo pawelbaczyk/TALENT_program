@@ -4,6 +4,9 @@
 #include "system.h"
 #include "help.h"
 #include <iomanip>
+#include <map>
+#include <cstdio>
+#include <string>
 
 const double hbar = 197;//TODO
 const double m = 938;
@@ -70,6 +73,10 @@ public:
     double HF_exact_f(double r);
     void HF_cal_exact_E0();
     double HF_exact_E0;
+
+    //maps
+    void map_generateV2B();
+    map<string,double> map_V2B;
 };
 
 #endif
