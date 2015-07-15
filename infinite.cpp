@@ -3,11 +3,9 @@
 Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_x(100),gauss_w(100)
 {
     g_s = _g_s;
-    rho = _rho;
     nMax = _nMax;
-    generateSP_States(_A);
+    setRho(_rho);
     gauleg(-1,1,gauss_x,gauss_w);
-    map_generateV2B();
 }
 
 void Infinite::generateSP_States(int A)
@@ -42,6 +40,9 @@ void Infinite::setRho(double _rho)
 {
     rho = _rho;
     generateSP_States(A);
+//    cout << "Generating matrices" << endl;
+//    map_generateV2B();
+//    cout << "Done" << endl;
 }
 
 void Infinite::printSP_States()
@@ -76,50 +77,46 @@ double Infinite::V1B(int a,int b)
 
 double Infinite::V2B(int p,int q,int r,int s)
 {
-    char key[100];
-    int a, b, c, d;
-    int sign = +1;
-    if (p == q)
-        return 0.0;
-    else if (p < q)
-    {
-        a = p;
-        b = q;
-    }
-    else
-    {
-        a = q;
-        b = p;
-        sign *= -1;
-    }
-    if (r == s)
-        return 0.0;
-    else if (r < s)
-    {
-        c = r;
-        d = s;
-    }
-    else
-    {
-        c = s;
-        d = r;
-        sign *= -1;
-    }
-    if (p+q <= r+s)
-        sprintf(key,"%.4d%.4d%.4d%.4d",a,b,c,d);
-    else
-        sprintf(key,"%.4d%.4d%.4d%.4d",c,d,a,b);
-    map<string,double>::iterator it;
-    it = map_V2B.find(string(key));
-
-    cout << it->second << "\t" << V2B_sym(a,b,c,d)-V2B_sym(a,b,d,c) << endl;
-
-
-    if (it != map_V2B.end())
-        return (it->second)*sign;
-    else
-        return 0.0;
-
+//    char key[100];
+//    int a, b, c, d;
+//    int sign = +1;
+//    if (p == q)
+//        return 0.0;
+//    else if (p < q)
+//    {
+//        a = p;
+//        b = q;
+//    }
+//    else
+//    {
+//        a = q;
+//        b = p;
+//        sign *= -1;
+//    }
+//    if (r == s)
+//        return 0.0;
+//    else if (r < s)
+//    {
+//        c = r;
+//        d = s;
+//    }
+//    else
+//    {
+//        c = s;
+//        d = r;
+//        sign *= -1;
+//    }
+//    if (p+q <= r+s)
+//        sprintf(key,"%.4d%.4d%.4d%.4d",a,b,c,d);
+//    else
+//        sprintf(key,"%.4d%.4d%.4d%.4d",c,d,a,b);
+//    map<string,double>::iterator it;
+//    it = map_V2B.find(string(key));
+//    if (it != map_V2B.end())
+//        return (it->second)*sign;
+//    else
+//        return 0.0;
+    return V2B_sym(p,q,r,s)-V2B_sym(p,q,s,r);
 }
 
 double Infinite::V2B_sym(int p, int q, int r, int s)
@@ -238,4 +235,134 @@ void Infinite::map_generateV2B()
                         (A->isospin + B->isospin == C->isospin + D->isospin))
                         map_V2B.insert(pair<string,double>(string(key),V2B_sym(a,b,c,d)-V2B_sym(a,b,d,c)));
                 }
+}
+
+
+void Infinite::CCD_calculateDeltaE()
+{
+    //CCD_Tau = CCD_V_ph;//first guess
+    map_t.clear();
+    map<string,double> map_t_prev;
+    for (int i = 0; i < A; i++)
+        for (int j = i+1; j < A; j++)
+            for (int a = A; a < numberSP; a++)
+                for (int b = a+1; b < numberSP; b++)
+                {
+                    char key[100];
+                    sprintf(key,"%.4d%.4d%.4d%.4d",i,j,a,b);
+                    SP_Infinite* A = (SP_Infinite*)SP_States[a];
+                    SP_Infinite* B = (SP_Infinite*)SP_States[b];
+                    SP_Infinite* I = (SP_Infinite*)SP_States[i];
+                    SP_Infinite* J = (SP_Infinite*)SP_States[j];
+                    if ((A->kx + B->kx == I->kx + J->kx) &&
+                        (A->ky + B->ky == I->ky + J->ky) &&
+                        (A->kz + B->kz == I->kz + J->kz) &&
+                        (A->spin + B->spin == I->spin + J->spin) &&
+                        (A->isospin + B->isospin == I->isospin + J->isospin))
+                    {
+                        double epsilon = I->spEnergy + J->spEnergy - A->spEnergy - B->spEnergy;
+                        map_t.insert(pair<string,double>(string(key),V2B(i,j,a,b)/epsilon));
+                    }
+                }
+    int iter = 0;
+    double CCD_deltaE_prev = 0.0;
+    do
+    {
+        iter++;
+        map_t_prev = map_t;
+        CCD_deltaE_prev = CCD_deltaE;
+        for (map<string,double>::iterator it_t = map_t.begin(); it_t != map_t.end(); ++it_t)
+        {
+            int a, b, i, j;
+            sscanf((it_t->first).c_str(),"%4d%4d%4d%4d",&i,&j,&a,&b);
+            it_t->second = V2B(a,b,i,j);//t is tau
+
+            double help = 0.0;
+            for (int c = A; c < numberSP; c++)
+                for (int d = c+1; d < numberSP; d++)
+                    help += V2B(a,b,c,d) * CCD_t(map_t_prev,i,j,c,d);
+            //for (int k = 0; k < A; k++)
+                //for (int l = k+1; l < A; l++)
+                    //help += V2B(k,l,i,j) * CCD_t(map_t_prev,k,l,a,b);
+//                        for (int k = 0; k < A; k++)
+//                            for (int c = A; c < numberSP; c++)
+//                                help += V2B(k,b,c,j) * CCD_t(i,k,a,c)
+//                                      - V2B(k,b,c,i) * CCD_t(j,k,a,c)
+//                                      - V2B(k,a,c,j) * CCD_t(i,k,b,c)
+//                                      + V2B(k,a,c,i) * CCD_t(j,k,b,c);
+//                        for (int k = 0; k < A; k++)
+//                            for (int l = 0; l < A; l++)
+//                                for (int c = A; c < numberSP; c++)
+//                                    for (int d = A; c < numberSP; c++)
+//                                    {
+//                                        help += 0.25 * V2B(k,l,c,d) * CCD_t(i,j,c,d) * CCD_t(k,l,a,b);
+//                                        help += V2B(k,l,c,d) * CCD_t(i,k,a,c) * CCD_t(j,l,b,d)
+//                                              - V2B(k,l,c,d) * CCD_t(j,k,a,c) * CCD_t(i,l,b,d);
+//                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(i,k,d,c) * CCD_t(l,j,a,b)
+//                                              +  0.5 * V2B(k,l,c,d) * CCD_t(j,k,d,c) * CCD_t(l,i,a,b);
+//                                        help += -0.5 * V2B(k,l,c,d) * CCD_t(l,k,a,c) * CCD_t(i,j,d,b)
+//                                              +  0.5 * V2B(k,l,c,d) * CCD_t(l,k,b,c) * CCD_t(i,j,d,a);
+//                                    }
+            it_t->second += help;
+        }
+        CCD_deltaE = 0.0;
+        for (map<string,double>::iterator it_t = map_t.begin(); it_t != map_t.end(); ++it_t)
+        {
+            int a, b, i, j;
+            sscanf((it_t->first).c_str(),"%4d%4d%4d%4d",&i,&j,&a,&b);
+            SP_Infinite* A = (SP_Infinite*)SP_States[a];
+            SP_Infinite* B = (SP_Infinite*)SP_States[b];
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            double epsilon = I->spEnergy + J->spEnergy - A->spEnergy - B->spEnergy;
+            it_t->second *= 1/epsilon;//t is real t
+            CCD_deltaE += it_t->second * V2B(a,b,i,j);
+
+        }
+        cout << CCD_deltaE << endl;
+    }
+    while (abs(CCD_deltaE_prev - CCD_deltaE) > 1e-8);
+}
+
+double Infinite::CCD_t(map<string,double> &_map, int p, int q, int r, int s)
+{
+    char key[100];
+    int a, b, c, d;
+    int sign = +1;
+    if (p == q)
+        return 0.0;
+    else if (p < q)
+    {
+        a = p;
+        b = q;
+    }
+    else
+    {
+        a = q;
+        b = p;
+        sign *= -1;
+    }
+    if (r == s)
+        return 0.0;
+    else if (r < s)
+    {
+        c = r;
+        d = s;
+    }
+    else
+    {
+        c = s;
+        d = r;
+        sign *= -1;
+    }
+    if (p+q <= r+s)
+        sprintf(key,"%.4d%.4d%.4d%.4d",a,b,c,d);
+    else
+        sprintf(key,"%.4d%.4d%.4d%.4d",c,d,a,b);
+    map<string,double>::iterator it;
+    it = _map.find(string(key));
+    if (it != _map.end())
+        return (it->second)*sign;
+    else
+        return 0.0;
 }

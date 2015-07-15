@@ -77,6 +77,12 @@ public:
     //maps
     void map_generateV2B();
     map<string,double> map_V2B;
+    map<string,double> map_t;
+
+
+    //CCD
+    void CCD_calculateDeltaE();
+    double CCD_t(map<string,double>&,int,int,int,int);
 };
 
 #endif

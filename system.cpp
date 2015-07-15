@@ -234,27 +234,27 @@ void System::CCD_calculateTau()
         TauIter = CCD_Tau;
         CCD_t_m = CCD_e_ph.array() * TauIter.array();
         CCD_deltaE_iter = (CCD_t_m * CCD_V_ph.transpose()).trace();
-//        CCD_Tau = CCD_V_ph
-//                + CCD_V_pp * CCD_t_m
-//                + CCD_t_m * CCD_V_hh;
-        int index1;
-        int index2;
-        index2 = 0;
-        for (int i = 0; i < A; i++)
-            for (int j = i+1; j < A; j++)
-            {
-                index1 = 0;
-                for (int a = A; a < numberSP; a++)
-                    for (int b = a+1; b < numberSP; b++)
-                    {
-                        double help = 0.0;
-                        CCD_Tau(index1,index2) = V2B(a,b,i,j);
-                        for (int c = A; c < numberSP; c++)
-                            for (int d = c+1; d < numberSP; d++)
-                                help += V2B(a,b,c,d) * CCD_t(i,j,c,d);
-                        for (int k = 0; k < A; k++)
-                            for (int l = k+1; l < A; l++)
-                                help += V2B(k,l,i,j) * CCD_t(k,l,a,b);
+        CCD_Tau = CCD_V_ph
+                + CCD_V_pp * CCD_t_m
+                + CCD_t_m * CCD_V_hh;
+//        int index1;
+//        int index2;
+//        index2 = 0;
+//        for (int i = 0; i < A; i++)
+//            for (int j = i+1; j < A; j++)
+//            {
+//                index1 = 0;
+//                for (int a = A; a < numberSP; a++)
+//                    for (int b = a+1; b < numberSP; b++)
+//                    {
+//                        double help = 0.0;
+//                        CCD_Tau(index1,index2) = V2B(a,b,i,j);
+//                        for (int c = A; c < numberSP; c++)
+//                            for (int d = c+1; d < numberSP; d++)
+//                                help += V2B(a,b,c,d) * CCD_t(i,j,c,d);
+//                        for (int k = 0; k < A; k++)
+//                            for (int l = k+1; l < A; l++)
+//                                help += V2B(k,l,i,j) * CCD_t(k,l,a,b);
 //                        for (int k = 0; k < A; k++)
 //                            for (int c = A; c < numberSP; c++)
 //                                help += V2B(k,b,c,j) * CCD_t(i,k,a,c)
@@ -275,11 +275,11 @@ void System::CCD_calculateTau()
 //                                              +  0.5 * V2B(k,l,c,d) * CCD_t(l,k,b,c) * CCD_t(i,j,d,a);
 //                                    }
 
-                        CCD_Tau(index1,index2) += help;
-                        index1++;
-                    }
-                index2++;
-            }
+//                        CCD_Tau(index1,index2) += help;
+//                        index1++;
+//                    }
+//                index2++;
+//            }
         CCD_t_m = CCD_e_ph.array() * CCD_Tau.array();
         CCD_deltaE = (CCD_t_m * CCD_V_ph.transpose()).trace();
     }

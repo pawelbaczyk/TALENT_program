@@ -5,26 +5,33 @@
 
 int main()
 {
-  Infinite infinite(2,2,0.10,1);//A,g_s,rho,nMax
+  Infinite infinite(14,2,0.10,2);//A,g_s,rho,nMax
  // infinite.printSP_States();
 
 
 
-  for (double rho = 0.002; rho <= 0.16; rho += 0.002)
-    {
-      infinite.setRho(rho);
-      infinite.HF_calculateE0();
-      infinite.HF_cal_exact_E0();
-      cout << infinite.rho << "\t" << infinite.HF_E0 / infinite.A << "\t" << infinite.HF_exact_E0 << endl;
-    }
+//  for (double rho = 0.02; rho <= 0.16; rho += 0.02)
+//    {
+//      infinite.setRho(rho);
+//      infinite.HF_calculateE0();
+//      infinite.HF_cal_exact_E0();
+//      cout << infinite.rho << "\t" << infinite.HF_E0 / infinite.A << "\t" << infinite.HF_exact_E0 << endl;
+//    }
 
+  infinite.setRho(0.1);
 
+//infinite.CCD_generateMatrices();
+//cout << "ASd" << endl;
+//infinite.CCD_calculateTau();
+infinite.CCD_calculateDeltaE();
+infinite.MBPT();
+cout << infinite.MBPT_deltaE << "\t" << infinite.CCD_deltaE << endl;
 
   //infinite.CCD_generateMatrices();
  // infinite.CCD_calculateTau();
  // cout << infinite.CCD_deltaE << endl;
   //cout << infinite.CCD_V_ph << endl;
- // infinite.MBPT();
+ //
   //cout << infinite.MBPT_deltaE<< endl;
 
 //  Pairing pairing(4,8,1);
