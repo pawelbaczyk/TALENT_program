@@ -5,6 +5,7 @@
 #include "Eigen/Dense"
 #include "help.h"
 #include <iostream>
+#include "Eigen/SparseCore"
 
 using namespace std;
 using namespace Eigen;
@@ -59,7 +60,7 @@ public:
     //CCD
     void CCD_generateMatrices();
     void CCD_calculateTau();
-    MatrixXd CCD_V_ph, CCD_V_pp, CCD_V_hh, CCD_e_ph, CCD_Tau, CCD_t_m;
+    SparseMatrix<double> CCD_V_ph, CCD_V_pp, CCD_V_hh, CCD_e_ph, CCD_Tau, CCD_t_m;
     double CCD_t(int,int,int,int);
     double CCD_E_GS;
     double CCD_deltaE;

@@ -20,11 +20,29 @@ int main()
 
   infinite.setRho(0.1);
 
-//infinite.CCD_generateMatrices();
+  time_t now;
+  struct tm *current;
+  now = time(0);
+  current = localtime(&now);
+  cout << current->tm_hour << ":" << current->tm_min <<":" << current->tm_sec << endl;
+
+infinite.CCD_generateMatrices();
+now = time(0);
+current = localtime(&now);
+cout << current->tm_hour << ":" << current->tm_min <<":" << current->tm_sec << endl;
+
 //cout << "ASd" << endl;
-//infinite.CCD_calculateTau();
-infinite.CCD_calculateDeltaE();
+infinite.CCD_calculateTau();
+now = time(0);
+current = localtime(&now);
+cout << current->tm_hour << ":" << current->tm_min <<":" << current->tm_sec << endl;
+
+//infinite.CCD_calculateDeltaE();
 infinite.MBPT();
+
+now = time(0);
+current = localtime(&now);
+cout << current->tm_hour << ":" << current->tm_min <<":" << current->tm_sec << endl;
 cout << infinite.MBPT_deltaE << "\t" << infinite.CCD_deltaE << endl;
 
   //infinite.CCD_generateMatrices();

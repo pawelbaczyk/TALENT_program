@@ -147,8 +147,13 @@ void System::MBPT_calculateDeltaE()//calculate correlation energy for MBPT
 
 void System::CCD_generateMatrices()
 {
+    typedef Eigen::Triplet<double> T;
+    std::vector<T> tripletList;
+    tripletList.reserve(1e8);//TODO release!
+
     int size_p = (numberSP-A)*(numberSP-A-1)/2;
     int size_h = A*(A-1)/2;
+    cerr << size_p*size_p << endl;
     int index1;
     int index2;
     CCD_V_ph.resize(size_p,size_h);
@@ -160,12 +165,17 @@ void System::CCD_generateMatrices()
             for (int a = A; a < numberSP; a++)
                 for (int b = a+1; b < numberSP; b++)
                 {
-                    CCD_V_ph(index1,index2) = V2B(a,b,i,j);
+                    //CCD_V_ph(index1,index2) = V2B(a,b,i,j);
+                    double V = V2B(a,b,i,j);
+                    if (V != 0.0)//TODO
+                        tripletList.push_back(T(index1,index2,V));
                     index1++;
                 }
             index2++;
         }
+    CCD_V_ph.setFromTriplets(tripletList.begin(), tripletList.end());
 
+    tripletList.clear();
     CCD_V_pp.resize(size_p,size_p);
     index2 = 0;
     for (int c = A; c < numberSP; c++)
@@ -175,12 +185,17 @@ void System::CCD_generateMatrices()
             for (int a = A; a < numberSP; a++)
                 for (int b = a+1; b < numberSP; b++)
                 {
-                    CCD_V_pp(index1,index2) = V2B(a,b,c,d);
+                    //CCD_V_pp(index1,index2) = V2B(a,b,c,d);
+                    double V = V2B(a,b,c,d);
+                    if (V != 0.0)//TODO
+                        tripletList.push_back(T(index1,index2,V));
                     index1++;
                 }
             index2++;
         }
+    CCD_V_pp.setFromTriplets(tripletList.begin(), tripletList.end());
 
+    tripletList.clear();
     CCD_V_hh.resize(size_h,size_h);
     index2 = 0;
     for (int i = 0; i < A; i++)
@@ -190,12 +205,17 @@ void System::CCD_generateMatrices()
             for (int k = 0; k < A; k++)
                 for (int l = k+1; l < A; l++)
                 {
-                    CCD_V_hh(index1,index2) = V2B(k,l,i,j);
+                    //CCD_V_hh(index1,index2) = V2B(k,l,i,j);
+                    double V = V2B(k,l,i,j);
+                    if (V != 0.0)//TODO
+                        tripletList.push_back(T(index1,index2,V));
                     index1++;
                 }
             index2++;
         }
+    CCD_V_hh.setFromTriplets(tripletList.begin(), tripletList.end());
 
+    tripletList.clear();
     CCD_e_ph.resize(size_p,size_h);
     index2 = 0;
     for (int i = 0; i < A; i++)
@@ -209,12 +229,13 @@ void System::CCD_generateMatrices()
                     double Ed = SP_States.at(d)->spEnergy;
                     double Ei = SP_States.at(i)->spEnergy;
                     double Ej = SP_States.at(j)->spEnergy;
-                    CCD_e_ph(index1,index2) = 1/(Ei+Ej-Ec-Ed);
+                    //CCD_e_ph(index1,index2) = 1/(Ei+Ej-Ec-Ed);
+                    tripletList.push_back(T(index1,index2,1/(Ei+Ej-Ec-Ed)));
                     index1++;
                 }
             index2++;
         }
-
+    CCD_e_ph.setFromTriplets(tripletList.begin(), tripletList.end());
 }
 
 void System::CCD_calculateTau()
@@ -223,8 +244,9 @@ void System::CCD_calculateTau()
     int size2 = A*(A-1)/2;
     CCD_Tau.resize(size1,size2);
     CCD_Tau = CCD_V_ph;
-    MatrixXd TauIter;
+    SparseMatrix<double> TauIter, help;
     TauIter.resize(size1,size2);
+    help.resize(size1,size1);
     CCD_t_m.resize(size1,size2);
     int iter = 0;
     double CCD_deltaE_iter;
@@ -232,11 +254,18 @@ void System::CCD_calculateTau()
     {
         iter++;
         TauIter = CCD_Tau;
-        CCD_t_m = CCD_e_ph.array() * TauIter.array();
-        CCD_deltaE_iter = (CCD_t_m * CCD_V_ph.transpose()).trace();
+        CCD_t_m = CCD_e_ph.cwiseProduct(TauIter);
+        help = CCD_t_m * SparseMatrix<double>(CCD_V_ph.transpose());
+        double sum =0;
+        for (int k=0; k < help.outerSize(); ++k)
+            sum += help.coeff(k,k);
+        CCD_deltaE_iter = sum;
         CCD_Tau = CCD_V_ph
-                + CCD_V_pp * CCD_t_m
-                + CCD_t_m * CCD_V_hh;
+                + CCD_V_pp * CCD_t_m;
+                //+ CCD_t_m * CCD_V_hh;
+cerr << iter << "\t" <<CCD_deltaE_iter<< endl;
+
+
 //        int index1;
 //        int index2;
 //        index2 = 0;
@@ -280,30 +309,39 @@ void System::CCD_calculateTau()
 //                    }
 //                index2++;
 //            }
-        CCD_t_m = CCD_e_ph.array() * CCD_Tau.array();
-        CCD_deltaE = (CCD_t_m * CCD_V_ph.transpose()).trace();
+
+
+        CCD_t_m = CCD_e_ph.cwiseProduct(CCD_Tau);
+        help = CCD_t_m * SparseMatrix<double>(CCD_V_ph.transpose());
+         sum =0;
+        for (int k=0; k < help.outerSize(); ++k)
+            sum += help.coeff(k,k);
+        CCD_deltaE = sum;
     }
     while (abs(CCD_deltaE_iter - CCD_deltaE) > 1e-8);
     //while(abs(CCD_Tau.norm() - TauIter.norm()) > 1e-6);
-    CCD_t_m = CCD_e_ph.array() * CCD_Tau.array();
-    CCD_deltaE = (CCD_t_m * CCD_V_ph.transpose()).trace();
+    help = CCD_t_m * SparseMatrix<double>(CCD_V_ph.transpose());
+    double sum =0;
+    for (int k=0; k < help.outerSize(); ++k)
+        sum += help.coeff(k,k);
+    CCD_deltaE = sum;
     //cout << "CCD  deltaE " << CCD_deltaE << endl;
 }
 
 double System::CCD_t(int i,int j,int a,int b)
 {
-    if ((i == j) || (a == b))
-        return 0;
-    int h1 = min(i,j);
-    int h2 = max(i,j);
-    int h_sign = 2*(int)(i<j)-1;
-    int p1 = min(a,b) - A;
-    int p2 = max(a,b) - A;
-    int p_sign = 2*(int)(a<b)-1;
-    int nh = (2*A-h1)*(h1+1)/2 - A + h2 - h1 - 1;
-    int B = numberSP - A;
-    int np = (2*B-p1)*(p1+1)/2 - B + p2 - p1 - 1;
-    return h_sign * p_sign * CCD_t_m(np,nh);//TODO check indices
+//    if ((i == j) || (a == b))
+//        return 0;
+//    int h1 = min(i,j);
+//    int h2 = max(i,j);
+//    int h_sign = 2*(int)(i<j)-1;
+//    int p1 = min(a,b) - A;
+//    int p2 = max(a,b) - A;
+//    int p_sign = 2*(int)(a<b)-1;
+//    int nh = (2*A-h1)*(h1+1)/2 - A + h2 - h1 - 1;
+//    int B = numberSP - A;
+//    int np = (2*B-p1)*(p1+1)/2 - B + p2 - p1 - 1;
+//    return h_sign * p_sign * CCD_t_m(np,nh);//TODO check indices
 }
 
 void System:: GF_generateMatrices()
