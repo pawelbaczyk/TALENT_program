@@ -25,16 +25,33 @@ const double KS = 0.465;
 class SP_Infinite : public SP_State
 {
 public:
-    SP_Infinite(double _kx, double _ky, double _kz, bool _spin, bool _isospin)
-        : SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
+ SP_Infinite(int _nx,int _ny, int _nz, double _kx, double _ky, double _kz, bool _spin, bool _isospin)
+   : nx(_nx),ny(_ny),nz(_nz),SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
           kx(_kx), ky(_ky), kz(_kz), spin(_spin), isospin(_isospin),
           HF_spEnergy(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)) {}
     double kx;
     double ky;
     double kz;
+    int nx,ny,nz;
     bool spin; //0 -- spin up, 1 -- spin down
     bool isospin; //0 -- neutron, 1 -- proton
     double HF_spEnergy;//init to spEnergy
+};
+
+class TwoBody_Infinite: public TwoBody_State
+{
+ public:
+ TwoBody_Infinite(int _p,int _q,int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):TwoBody_State(_p,_q),Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+  int Nx;
+  int Ny;
+  int Nz;
+  int Sz;
+  int Tz;
+};
+class TwoBody_comp
+{
+  public:
+  bool operator ()(TwoBody_State*,TwoBody_State*);
 };
 
 class Infinite : public System
@@ -58,6 +75,11 @@ public:
     //single particle states
     void generateSP_States(int);
     void printSP_States();
+
+
+    //twobody states
+    void generateTwoBody_States();
+    void printTwoBody_States();
 
     //configurations
     void generateConfigurations();

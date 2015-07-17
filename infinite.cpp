@@ -1,5 +1,17 @@
 #include "infinite.h"
 
+
+bool TwoBody_comp::operator () (TwoBody_State*P1,TwoBody_State*P2)
+{
+  TwoBody_Infinite* TwoBody1=(TwoBody_Infinite*)P1;
+  TwoBody_Infinite* TwoBody2=(TwoBody_Infinite*)P2;
+  if(TwoBody1->Sz!=TwoBody2->Sz) return TwoBody1->Sz<TwoBody2->Sz;
+  else if(TwoBody1->Tz!=TwoBody2->Tz) return TwoBody1->Tz<TwoBody2->Tz;
+  else if(TwoBody1->Nx!=TwoBody2->Nx) return TwoBody1->Nx<TwoBody2->Nx;
+  else if(TwoBody1->Ny!=TwoBody2->Ny) return TwoBody1->Ny<TwoBody2->Ny;
+  else if(TwoBody1->Nz!=TwoBody2->Nz) return TwoBody1->Nz<TwoBody2->Nz;
+  return false;
+}
 Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_x(100),gauss_w(100)
 {
     g_s = _g_s;
@@ -24,13 +36,13 @@ void Infinite::generateSP_States(int A)
                         double kz = 2 * M_PI * nZ / L;
                         if (g_s == 2 || g_s == 4)
                         {
-                            SP_States.push_back(new SP_Infinite(kx,ky,kz,0,0));
-                            SP_States.push_back(new SP_Infinite(kx,ky,kz,1,0));
+			  SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,0,0));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,0));
                         }
                         if (g_s == 4)
                         {
-                            SP_States.push_back(new SP_Infinite(kx,ky,kz,0,1));
-                            SP_States.push_back(new SP_Infinite(kx,ky,kz,1,1));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,0,1));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,1));
                         }
                     }
     numberSP = SP_States.size();
@@ -58,6 +70,63 @@ void Infinite::printSP_States()
     }
 }
 
+
+
+void Infinite::generateTwoBody_States()
+{
+  for(int i=0;i<A;i++)
+    for(int j=i+1;j<A;j++)
+      {
+	SP_Infinite* I=(SP_Infinite*)SP_States[i];
+	SP_Infinite* J=(SP_Infinite*)SP_States[j];
+	double Nx=I->nx + J->nx;
+	double Ny=I->ny + J->ny;
+	double Nz=I->nz + J->nz;
+	int Sz=(I->spin == J->spin);
+	int Tz=(I->isospin == J->isospin);
+	TwoBody_States_hh.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
+      }
+  for(int i=A;i<numberSP;i++)
+    for(int j=0;j<A;j++)
+      {
+	SP_Infinite* I=(SP_Infinite*)SP_States[i];
+	SP_Infinite* J=(SP_Infinite*)SP_States[j];
+	double Nx=I->nx + J->nx;
+	double Ny=I->ny + J->ny;
+	double Nz=I->nz + J->nz;
+	int Sz=(I->spin == J->spin);
+	int Tz=(I->isospin == J->isospin);
+	TwoBody_States_ph.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
+      }
+  for(int i=A;i<numberSP;i++)
+    for(int j=i+1;j<numberSP;j++)
+      {
+	SP_Infinite* I=(SP_Infinite*)SP_States[i];
+	SP_Infinite* J=(SP_Infinite*)SP_States[j];
+	double Nx=I->kx + J->kx;
+	double Ny=I->ky + J->ky;
+	double Nz=I->kz + J->kz;
+	int Sz=(I->spin == J->spin);
+	int Tz=(I->isospin == J->isospin);
+	TwoBody_States_pp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
+      }
+  sort(TwoBody_States_hh.begin(),TwoBody_States_hh.end(),TwoBody_comp());
+  sort(TwoBody_States_ph.begin(),TwoBody_States_ph.end(),TwoBody_comp());
+  sort(TwoBody_States_pp.begin(),TwoBody_States_pp.end(),TwoBody_comp());
+}
+
+void Infinite::printTwoBody_States()
+{
+  for(int i=0;i<TwoBody_States_ph.size();i++)
+    {
+      TwoBody_Infinite* P=(TwoBody_Infinite*)TwoBody_States_ph[i];
+      cout<<P->Sz<<"\t";
+      cout<<P->Tz<<"\t";
+      cout<<P->Nx<<"\t";
+      cout<<P->Ny<<"\t";
+      cout<<P->Nz<<endl;
+    }
+}
 void Infinite::generateConfigurations()
 {
 
