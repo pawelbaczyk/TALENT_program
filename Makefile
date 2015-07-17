@@ -3,8 +3,8 @@ CXXDEF=
 CXXFLAGS=-O3 
 
 
-DEPS=help.h
-OBJ= main.o help.o system.o pairing.o infinite.o
+DEPS=       help.h system.h pairing.h infinite.h channel.h
+OBJ= main.o help.o system.o pairing.o infinite.o channel.o
 
 %.o: %.cpp $(DEPS)
 	$(CXX) ${CXXDEF} -c -o $@ $< $(CXXFLAGS)

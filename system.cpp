@@ -214,10 +214,10 @@ void System::CCD_OnFlight()
             for (int c = A; c < numberSP; c++)
                 for (int d = c+1; d < numberSP; d++)
                 {
-                    double Ec = SP_States.at(c)->spEnergy;
-                    double Ed = SP_States.at(d)->spEnergy;
-                    double Ei = SP_States.at(i)->spEnergy;
-                    double Ej = SP_States.at(j)->spEnergy;
+                    double Ec = V1B(c,c);
+                    double Ed = V1B(d,d);
+                    double Ei = V1B(i,i);
+                    double Ej = V1B(j,j);
                     CCD_e_ph(index1,index2) = 1/(Ei+Ej-Ec-Ed);
                     index1++;
                 }
@@ -390,10 +390,10 @@ void System::CCD_SparseMatrices()
             for (int c = A; c < numberSP; c++)
                 for (int d = c+1; d < numberSP; d++)
                 {
-                    double Ec = SP_States.at(c)->spEnergy;
-                    double Ed = SP_States.at(d)->spEnergy;
-                    double Ei = SP_States.at(i)->spEnergy;
-                    double Ej = SP_States.at(j)->spEnergy;
+                    double Ec = V1B(c,c);
+                    double Ed = V1B(d,d);
+                    double Ei = V1B(i,i);
+                    double Ej = V1B(j,j);
                     //CCD_e_ph(index1,index2) = 1/(Ei+Ej-Ec-Ed);
                     tripletList.push_back(T(index1,index2,1/(Ei+Ej-Ec-Ed)));
                     index1++;
@@ -478,7 +478,7 @@ void System:: GF_generateMatrices()
             GF_Mstatic(i,j)=GF_Sigma_static(i,j);
             if(i==j)
             {
-                GF_Mstatic(i,i)+=SP_States[i]->spEnergy;
+                GF_Mstatic(i,i)+=V1B(i,i);
             }
             else
             {
@@ -495,7 +495,7 @@ void System:: GF_generateMatrices()
         for(int k1=0;k1<A;k1++)
             for(int k2=k1+1;k2<A;k2++)
             {
-                GF_Er(j,j)=SP_States[k1]->spEnergy+SP_States[k2]->spEnergy-SP_States[n]->spEnergy;
+                GF_Er(j,j)=V1B(k1,k1)+V1B(k2,k2)-V1B(n,n);
                 for(int i=0;i<numberSP;i++)
                 {
                     GF_Mr(i,j)=V2B(i,n,k1,k2);
@@ -510,7 +510,7 @@ void System:: GF_generateMatrices()
         for(int n1=A;n1<numberSP;n1++)
             for(int n2=n1+1;n2<numberSP;n2++)
             {
-                GF_Eq(j,j)=SP_States[n1]->spEnergy+SP_States[n2]->spEnergy-SP_States[k]->spEnergy;
+                GF_Eq(j,j)=V1B(n1,n1)+V1B(n2,n2)-V1B(k,k);
                 for(int i=0;i<numberSP;i++)
                 {
                     GF_Mq(i,j)=V2B(i,k,n1,n2);
@@ -550,7 +550,7 @@ void System::GF_diag()
     GF_Z=solver.eigenvectors().topLeftCorner(numberSP,numberSP+dim_2p1h+dim_2h1p);
     GF_W=solver.eigenvectors().bottomLeftCorner(dim_2p1h+dim_2h1p,numberSP+dim_2p1h+dim_2h1p);
 
-    double sep_energy=(SP_States[A-1]->spEnergy+SP_States[A]->spEnergy)/2;
+    double sep_energy=(V1B(A-1,A-1)+V1B(A,A))/2;
     GF_E_GS=0;
 
     for(int j=0;j<numberSP;j++)
@@ -559,7 +559,7 @@ void System::GF_diag()
         {
             if(GF_e[k]<sep_energy)
             {
-                GF_E_GS+=(SP_States[j]->spEnergy+GF_e[k])*GF_Z(j,k)*GF_Z(j,k);
+                GF_E_GS+=(V1B(j,j)+GF_e[k])*GF_Z(j,k)*GF_Z(j,k);
             }
         }
     }

@@ -3,6 +3,7 @@
 
 #include "system.h"
 #include "help.h"
+#include "channel.h"
 #include <iomanip>
 #include <map>
 #include <cstdio>
@@ -42,7 +43,7 @@ public:
     Infinite(int,int,double,int);
 
     //parameters
-    int g_s;
+    int g_s, vs, vt;
     double k_F;
     double rho;
     int nMax;
@@ -78,6 +79,9 @@ public:
     double HF_exact_f(double r);
     void HF_cal_exact_E0();
     double HF_exact_E0;
+
+    //CCD
+    void CCD_BlockMatrices();
 };
 
 #endif

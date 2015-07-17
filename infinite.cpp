@@ -175,4 +175,76 @@ void Infinite::HF_cal_exact_E0()
     }
 }
 
+void Infinite::CCD_BlockMatrices()
+{
+    vector<Channel> CCD_V_hhhh, CCD_V_hhpp;
+
+    double nx, ny, nz;
+    int S, T = -2;
+    for (int i = 0; i < states2B_hh.size(); i++)
+    {
+        State2B currentState = states2B_hh[i];
+        if ((currentState.nx != nx) || (currentState.ny != ny) || (currentState.nz != nz) ||
+                (currentState.S != S) || (currentState.T != T))
+        {
+            nx = currentState.nx;
+            ny = currentState.ny;
+            nz = currentState.nz;
+            S = currentState.S;
+            T = currentState.T;
+            CCD_V_hhhh.push_back(Channel(nx,ny,nz,S,T));
+        }
+        CCD_V_hhhh[CCD_V_hhhh.size()-1].bra.push_back(i);
+        CCD_V_hhhh[CCD_V_hhhh.size()-1].ket.push_back(i);
+    }
+
+
+    for (int i = 0; i < states2B_hh.size(); i++)
+    {
+        bool good = 0;
+        State2B currentState = states2B_hh[i];
+        if ((currentState.nx != nx) || (currentState.ny != ny) || (currentState.nz != nz) ||
+                (currentState.S != S) || (currentState.T != T))
+        {
+            nx = currentState.nx;
+            ny = currentState.ny;
+            nz = currentState.nz;
+            S = currentState.S;
+            T = currentState.T;
+            for (int j = 0; j < states2B_pp.size(); j++)
+            {
+                State state_pp = states2B_pp[j];
+                if ((state_pp.nx == nx) || (state_pp.ny == ny) || (state_pp.nz == nz) ||
+                        (state_pp.S == S) || (state_pp.T == T))
+                {
+                    if (good == 0)
+                    {
+                        CCD_V_hhpp.push_back(Channel(nx,ny,nz,S,T));
+                        good = 1;
+                    }
+                    CCD_V_hhpp[CCD_V_hhpp.size()-1].ket.push_back(j);
+                }
+            }
+        }
+        CCD_V_hhpp[CCD_V_hhhh.size()-1].bra.push_back(i);
+    }
+
+
+
+
+
+//    for (int i = 0; i < CCD_V_hhhh.size(); i++)
+//    {
+//        Channel currentChannel = CCD_V_hhhh[i];
+//        for(int s1 = 0; s1 < currentChannel.states.size(); s1++)
+//            for(int s2 = 0; s2 < currentChannel.states.size(); s2++)
+//                currentChannel.m(s1,s2) = V2B(s1,s1,s2,s2);
+//    }
+
+//    for (int i = 0; i < CCD_V_hhhh.size(); i++)
+//        for (int j = 0; j < CCD_t_hhpp.size(); j++)
+//        {
+
+//        }
+}
 
