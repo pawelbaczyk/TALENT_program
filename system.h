@@ -7,6 +7,8 @@
 #include <iostream>
 #include "Eigen/SparseCore"
 
+#include <iomanip>
+
 using namespace std;
 using namespace Eigen;
 
@@ -20,7 +22,7 @@ public:
 class System
 {
 public:
-    virtual ~System(){}
+    virtual ~System();
     System(int);
     int A; //number of particles, have to be even for pairing
     int numberSP; //number of single particle orbitals
@@ -58,12 +60,12 @@ public:
     double MBPT_deltaE;
 
     //CCD
-    void CCD_generateMatrices();
-    void CCD_calculateTau();
-    SparseMatrix<double> CCD_V_ph, CCD_V_pp, CCD_V_hh, CCD_e_ph, CCD_Tau, CCD_t_m;
-    double CCD_t(int,int,int,int);
-    double CCD_E_GS;
+    void CCD_SparseMatrices();
+    void CCD_OnFlight();
+    double CCD_OnFlight_t(int,int,int,int);
+    MatrixXd CCD_OnFlight_t_m;
     double CCD_deltaE;
+
 
     //GF
     void GF_generateMatrices();

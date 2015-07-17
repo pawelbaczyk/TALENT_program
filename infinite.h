@@ -9,8 +9,10 @@
 #include <string>
 
 
-const double hbar = 197;//TODO
-const double m = 938;
+const double hbar = 197.326968;//TODO
+const double mn = 939.565;//n
+const double mp = 938.27200;
+const double m = mn;
 
 const double V0R = 200;
 const double KR = 1.487;
@@ -24,12 +26,14 @@ class SP_Infinite : public SP_State
 public:
     SP_Infinite(double _kx, double _ky, double _kz, bool _spin, bool _isospin)
         : SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
-          kx(_kx), ky(_ky), kz(_kz), spin(_spin), isospin(_isospin) {}
+          kx(_kx), ky(_ky), kz(_kz), spin(_spin), isospin(_isospin),
+          HF_spEnergy(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)) {}
     double kx;
     double ky;
     double kz;
     bool spin; //0 -- spin up, 1 -- spin down
     bool isospin; //0 -- neutron, 1 -- proton
+    double HF_spEnergy;//init to spEnergy
 };
 
 class Infinite : public System
@@ -74,16 +78,6 @@ public:
     double HF_exact_f(double r);
     void HF_cal_exact_E0();
     double HF_exact_E0;
-
-    //maps
-    void map_generateV2B();
-    map<string,double> map_V2B;
-    map<string,double> map_t;
-
-
-    //CCD
-    void CCD_calculateDeltaE();
-    double CCD_t(map<string,double>&,int,int,int,int);
 };
 
 #endif
