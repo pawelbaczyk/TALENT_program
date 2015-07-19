@@ -3,7 +3,6 @@
 
 #include "system.h"
 #include "help.h"
-#include "channel.h"
 #include <iomanip>
 #include <map>
 #include <cstdio>
@@ -25,7 +24,7 @@ const double KS = 0.465;
 class SP_Infinite : public SP_State
 {
 public:
- SP_Infinite(int _nx,int _ny, int _nz, double _kx, double _ky, double _kz, bool _spin, bool _isospin)
+ SP_Infinite(int _nx,int _ny, int _nz, double _kx, double _ky, double _kz, int _spin, int _isospin)
    : nx(_nx),ny(_ny),nz(_nz),SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
           kx(_kx), ky(_ky), kz(_kz), spin(_spin), isospin(_isospin),
           HF_spEnergy(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)) {}
@@ -33,8 +32,8 @@ public:
     double ky;
     double kz;
     int nx,ny,nz;
-    bool spin; //0 -- spin up, 1 -- spin down
-    bool isospin; //0 -- neutron, 1 -- proton
+    int spin; //0 -- spin up, 1 -- spin down
+    int isospin; //0 -- neutron, 1 -- proton
     double HF_spEnergy;//init to spEnergy
 };
 
@@ -54,13 +53,25 @@ class TwoBody_comp
   bool operator ()(TwoBody_State*,TwoBody_State*);
 };
 
+
+class Channel
+{
+ public:
+ Channel(int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+  int Nx,Ny,Nz,Sz,Tz;
+  vector<int> bra,ket;
+  MatrixXd mat;
+  bool Include(TwoBody_Infinite*);
+};
+
+
 class Infinite : public System
 {
 public:
     Infinite(int,int,double,int);
 
     //parameters
-    int g_s, vs, vt;
+    int g_s;
     double k_F;
     double rho;
     int nMax;
@@ -104,6 +115,8 @@ public:
 
     //CCD
     void CCD_BlockMatrices();
+    void CCD_cal();
+    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp;
 };
 
 #endif

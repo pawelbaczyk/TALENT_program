@@ -12,6 +12,12 @@ bool TwoBody_comp::operator () (TwoBody_State*P1,TwoBody_State*P2)
   else if(TwoBody1->Nz!=TwoBody2->Nz) return TwoBody1->Nz<TwoBody2->Nz;
   return false;
 }
+bool Channel::Include(TwoBody_Infinite*TwoBody)
+{
+  if(TwoBody->Nx==Nx&&TwoBody->Ny==Ny&&TwoBody->Nz==Nz&&TwoBody->Sz==Sz&&TwoBody->Tz==Tz)
+    return true;
+  return false;
+}
 Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_x(100),gauss_w(100)
 {
     g_s = _g_s;
@@ -79,11 +85,11 @@ void Infinite::generateTwoBody_States()
       {
 	SP_Infinite* I=(SP_Infinite*)SP_States[i];
 	SP_Infinite* J=(SP_Infinite*)SP_States[j];
-	double Nx=I->nx + J->nx;
-	double Ny=I->ny + J->ny;
-	double Nz=I->nz + J->nz;
-	int Sz=(I->spin == J->spin);
-	int Tz=(I->isospin == J->isospin);
+	int Nx=I->nx + J->nx;
+	int Ny=I->ny + J->ny;
+	int Nz=I->nz + J->nz;
+	int Sz=I->spin + J->spin;
+	int Tz=I->isospin + J->isospin;
 	TwoBody_States_hh.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
       }
   for(int i=A;i<numberSP;i++)
@@ -91,11 +97,11 @@ void Infinite::generateTwoBody_States()
       {
 	SP_Infinite* I=(SP_Infinite*)SP_States[i];
 	SP_Infinite* J=(SP_Infinite*)SP_States[j];
-	double Nx=I->nx + J->nx;
-	double Ny=I->ny + J->ny;
-	double Nz=I->nz + J->nz;
-	int Sz=(I->spin == J->spin);
-	int Tz=(I->isospin == J->isospin);
+	int Nx=I->nx + J->nx;
+	int Ny=I->ny + J->ny;
+	int Nz=I->nz + J->nz;
+	int Sz=I->spin + J->spin;
+	int Tz=I->isospin + J->isospin;
 	TwoBody_States_ph.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
       }
   for(int i=A;i<numberSP;i++)
@@ -103,11 +109,11 @@ void Infinite::generateTwoBody_States()
       {
 	SP_Infinite* I=(SP_Infinite*)SP_States[i];
 	SP_Infinite* J=(SP_Infinite*)SP_States[j];
-	double Nx=I->kx + J->kx;
-	double Ny=I->ky + J->ky;
-	double Nz=I->kz + J->kz;
-	int Sz=(I->spin == J->spin);
-	int Tz=(I->isospin == J->isospin);
+	int Nx=I->nx + J->nx;
+	int Ny=I->ny + J->ny;
+	int Nz=I->nz + J->nz;
+	int Sz=I->spin + J->spin;
+	int Tz=I->isospin + J->isospin;
 	TwoBody_States_pp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
       }
   sort(TwoBody_States_hh.begin(),TwoBody_States_hh.end(),TwoBody_comp());
@@ -117,16 +123,61 @@ void Infinite::generateTwoBody_States()
 
 void Infinite::printTwoBody_States()
 {
-  for(int i=0;i<TwoBody_States_ph.size();i++)
+  for(int i=0;i<TwoBody_States_pp.size()-1;i++)
     {
-      TwoBody_Infinite* P=(TwoBody_Infinite*)TwoBody_States_ph[i];
-      cout<<P->Sz<<"\t";
-      cout<<P->Tz<<"\t";
-      cout<<P->Nx<<"\t";
-      cout<<P->Ny<<"\t";
-      cout<<P->Nz<<endl;
+      TwoBody_Infinite* P1=(TwoBody_Infinite*)TwoBody_States_pp[i];
+      cout<<i+1<<"\t";
+      cout<<P1->p<<"\t";
+      cout<<P1->q<<"\t";
+      cout<<P1->Sz<<"\t";
+      cout<<P1->Tz<<"\t";
+      cout<<P1->Nx<<"\t";
+      cout<<P1->Ny<<"\t";
+      cout<<P1->Nz<<endl;
     }
+  
+  // int num=0;
+  // for(int i=0;i<TwoBody_States_hh.size();i++)
+  //   {
+  //     for(int j=0;j<TwoBody_States_pp.size();j++)
+  // 	{
+  // 	  TwoBody_Infinite* P1=(TwoBody_Infinite*)TwoBody_States_hh[i];
+  // 	  TwoBody_Infinite* P2=(TwoBody_Infinite*)TwoBody_States_pp[j];
+  // 	  TwoBody_comp comp;
+  // 	  if((!comp(P1,P2))&&(!comp(P2,P1)))
+  // 	    {
+  // 	      if(i<TwoBody_States_hh.size()-1&&j<TwoBody_States_pp.size()-1)
+  // 		{
+  // 		  TwoBody_Infinite* P3=(TwoBody_Infinite*)TwoBody_States_hh[i+1];
+  // 		  int pp=1,hh=1;
+  // 		  while((!comp(P1,P3))&&(!comp(P3,P1))&&i<TwoBody_States_hh.size()-2)
+  // 		    {
+  // 		      i++;
+  // 		      hh++;
+  // 		      P1=(TwoBody_Infinite*)TwoBody_States_hh[i];
+  // 		      P3=(TwoBody_Infinite*)TwoBody_States_hh[i+1];
+  // 		    }
+  // 		  TwoBody_Infinite* P4=(TwoBody_Infinite*)TwoBody_States_pp[j+1];
+  // 		  while((!comp(P2,P4))&&(!comp(P4,P2))&&j<TwoBody_States_pp.size()-1)
+  // 		    {
+  // 		      j++;
+  // 		      pp++;
+  // 		      P2=(TwoBody_Infinite*)TwoBody_States_pp[j];
+  // 		      P4=(TwoBody_Infinite*)TwoBody_States_pp[j+1];
+  // 		    }
+  // 		  cout<<P1->Sz<<"\t";
+  // 		  cout<<P1->Tz<<"\t";
+  // 		  cout<<P1->Nx<<"\t";
+  // 		  cout<<P1->Ny<<"\t";
+  // 		  cout<<P1->Nz<<"\t";
+  // 		  cout<<num<<"\t"<<hh<<"\t"<<pp<<endl;
+  // 		  ++num;
+  // 		}
+  // 	    }
+  // 	}
+  //   }
 }
+
 void Infinite::generateConfigurations()
 {
 
@@ -157,9 +208,9 @@ double Infinite::V2B_sym(int p, int q, int r, int s)
     SP_Infinite* Q = (SP_Infinite*)SP_States[q];
     SP_Infinite* R = (SP_Infinite*)SP_States[r];
     SP_Infinite* S = (SP_Infinite*)SP_States[s];
-    if ((P->kx + Q->kx == R->kx + S->kx) &&
-        (P->ky + Q->ky == R->ky + S->ky) &&
-        (P->kz + Q->kz == R->kz + S->kz) &&
+    if ((P->nx + Q->nx == R->nx + S->nx) &&
+        (P->ny + Q->ny == R->ny + S->ny) &&
+        (P->nz + Q->nz == R->nz + S->nz) &&
         (P->spin + Q->spin == R->spin + S->spin) &&
         (P->isospin + Q->isospin == R->isospin + S->isospin))
     {
@@ -246,74 +297,230 @@ void Infinite::HF_cal_exact_E0()
 
 void Infinite::CCD_BlockMatrices()
 {
-    vector<Channel> CCD_V_hhhh, CCD_V_hhpp;
+  // for (int i = 0; i < TwoBody_States_hh.size(); i++)
+  //   {
+  //     TwoBody_Infinite *currentState = (TwoBody_Infinite *)TwoBody_States_hh[i];
+  //     int Nx=currentState->Nx;
+  //     int Ny=currentState->Ny;
+  //     int Nz=currentState->Nz;
+  //     int Sz=currentState->Sz;
+  //     int Tz=currentState->Tz;
+  //     cout<<Sz<<"\t"<<Tz<<"\t"<<Nx<<"\t"<<Ny<<"\t"<<Nz<<endl;
+  //     if( CCD_V_hhhh.size()==0 || !(CCD_V_hhhh[CCD_V_hhhh.size()-1].Include(currentState)) )
+  // 	{
+  // 	  CCD_V_hhhh.push_back(Channel(Nx,Ny,Nz,Sz,Tz));
+  //       }
+  //     CCD_V_hhhh[CCD_V_hhhh.size()-1].bra.push_back(i);
+  //     CCD_V_hhhh[CCD_V_hhhh.size()-1].ket.push_back(i);
+  //   }
 
-    double nx, ny, nz;
-    int S, T = -2;
-    for (int i = 0; i < states2B_hh.size(); i++)
+  // for (int i = 0; i < TwoBody_States_pp.size(); i++)
+  //   {
+  //     TwoBody_Infinite *currentState = (TwoBody_Infinite *)TwoBody_States_pp[i];
+  //     int Nx=currentState->Nx;
+  //     int Ny=currentState->Ny;
+  //     int Nz=currentState->Nz;
+  //     int Sz=currentState->Sz;
+  //     int Tz=currentState->Tz;
+  //     if( CCD_V_pppp.size()==0 || !(CCD_V_pppp[CCD_V_pppp.size()-1].Include(currentState)) )
+  // 	{
+  // 	  CCD_V_pppp.push_back(Channel(Nx,Ny,Nz,Sz,Tz));
+  //       }
+  //     CCD_V_pppp[CCD_V_pppp.size()-1].bra.push_back(i);
+  //     CCD_V_pppp[CCD_V_pppp.size()-1].ket.push_back(i);
+  //   }
+  // cout<<CCD_V_pppp.size()<<endl;
+
+  
+  for (int i = 0,j = 0; i < TwoBody_States_hh.size(); i++)
     {
-        State2B currentState = states2B_hh[i];
-        if ((currentState.nx != nx) || (currentState.ny != ny) || (currentState.nz != nz) ||
-                (currentState.S != S) || (currentState.T != T))
-        {
-            nx = currentState.nx;
-            ny = currentState.ny;
-            nz = currentState.nz;
-            S = currentState.S;
-            T = currentState.T;
-            CCD_V_hhhh.push_back(Channel(nx,ny,nz,S,T));
-        }
-        CCD_V_hhhh[CCD_V_hhhh.size()-1].bra.push_back(i);
-        CCD_V_hhhh[CCD_V_hhhh.size()-1].ket.push_back(i);
+      TwoBody_Infinite *State_hh = (TwoBody_Infinite *)TwoBody_States_hh[i];
+      TwoBody_Infinite *State_pp = (TwoBody_Infinite *)TwoBody_States_pp[j];
+      TwoBody_comp LT;
+      while(LT(State_pp,State_hh)&&j<TwoBody_States_pp.size())
+	{
+	  j++;
+	  State_pp = (TwoBody_Infinite *)TwoBody_States_pp[j];
+	}
+      if(j>=TwoBody_States_pp.size()) break;
+      if(!LT(State_hh,State_pp))
+	{
+	  int Nx=State_hh->Nx;
+	  int Ny=State_hh->Ny;
+	  int Nz=State_hh->Nz;
+	  int Sz=State_hh->Sz;
+	  int Tz=State_hh->Tz;
+	  CCD_V_hhpp.push_back(Channel(Nx,Ny,Nz,Sz,Tz));
+	  CCD_V_hhpp[CCD_V_hhpp.size()-1].bra.push_back(i);
+	  CCD_V_hhpp[CCD_V_hhpp.size()-1].ket.push_back(j);
+	  if(i<TwoBody_States_hh.size()-1)
+	    {
+	      TwoBody_Infinite *Ph = (TwoBody_Infinite *)TwoBody_States_hh[i+1];
+	      while((!LT(Ph,State_hh))&&(!LT(State_hh,Ph)))
+		{
+		  i++;
+		  CCD_V_hhpp[CCD_V_hhpp.size()-1].bra.push_back(i);
+		  if(i>=TwoBody_States_hh.size()-1) break;
+		  State_hh=(TwoBody_Infinite*)TwoBody_States_hh[i];
+		  Ph=(TwoBody_Infinite*)TwoBody_States_hh[i+1];
+		}
+	    }
+
+	  if(j<TwoBody_States_pp.size()-1)
+	    {
+	      TwoBody_Infinite *Pp = (TwoBody_Infinite *)TwoBody_States_pp[j+1];
+	      while((!LT(Pp,State_pp))&&(!LT(State_pp,Pp)))
+		{
+		  j++;
+		  CCD_V_hhpp[CCD_V_hhpp.size()-1].ket.push_back(j);
+		  if(j>=TwoBody_States_pp.size()-1) break;
+		  State_pp=(TwoBody_Infinite*)TwoBody_States_pp[j];
+		  Pp=(TwoBody_Infinite*)TwoBody_States_pp[j+1];
+		}
+	    }
+      	  j++;
+	}
+    }
+  
+  for(int i=0;i<CCD_V_hhpp.size();i++)
+    {
+      int Nx=CCD_V_hhpp[i].Nx;
+      int Ny=CCD_V_hhpp[i].Ny;
+      int Nz=CCD_V_hhpp[i].Nz;
+      int Sz=CCD_V_hhpp[i].Sz;
+      int Tz=CCD_V_hhpp[i].Tz;
+      CCD_V_hhhh.push_back(Channel(Nx,Ny,Nz,Sz,Tz));
+      int size=CCD_V_hhpp[i].bra.size();
+      CCD_V_hhhh[CCD_V_hhhh.size()-1].bra.resize(size);
+      CCD_V_hhhh[CCD_V_hhhh.size()-1].ket.resize(size);
+      for(int j=0;j<size;j++)
+	{
+	  CCD_V_hhhh[CCD_V_hhhh.size()-1].bra[j]=CCD_V_hhpp[i].bra[j];
+	  CCD_V_hhhh[CCD_V_hhhh.size()-1].ket[j]=CCD_V_hhpp[i].bra[j];
+	}
     }
 
 
-    for (int i = 0; i < states2B_hh.size(); i++)
+  for(int i=0;i<CCD_V_hhpp.size();i++)
     {
-        bool good = 0;
-        State2B currentState = states2B_hh[i];
-        if ((currentState.nx != nx) || (currentState.ny != ny) || (currentState.nz != nz) ||
-                (currentState.S != S) || (currentState.T != T))
-        {
-            nx = currentState.nx;
-            ny = currentState.ny;
-            nz = currentState.nz;
-            S = currentState.S;
-            T = currentState.T;
-            for (int j = 0; j < states2B_pp.size(); j++)
-            {
-                State state_pp = states2B_pp[j];
-                if ((state_pp.nx == nx) || (state_pp.ny == ny) || (state_pp.nz == nz) ||
-                        (state_pp.S == S) || (state_pp.T == T))
-                {
-                    if (good == 0)
-                    {
-                        CCD_V_hhpp.push_back(Channel(nx,ny,nz,S,T));
-                        good = 1;
-                    }
-                    CCD_V_hhpp[CCD_V_hhpp.size()-1].ket.push_back(j);
-                }
-            }
-        }
-        CCD_V_hhpp[CCD_V_hhhh.size()-1].bra.push_back(i);
+      int Nx=CCD_V_hhpp[i].Nx;
+      int Ny=CCD_V_hhpp[i].Ny;
+      int Nz=CCD_V_hhpp[i].Nz;
+      int Sz=CCD_V_hhpp[i].Sz;
+      int Tz=CCD_V_hhpp[i].Tz;
+      CCD_V_pppp.push_back(Channel(Nx,Ny,Nz,Sz,Tz));
+      int size=CCD_V_hhpp[i].ket.size();
+      CCD_V_pppp[CCD_V_pppp.size()-1].bra.resize(size);
+      CCD_V_pppp[CCD_V_pppp.size()-1].ket.resize(size);
+      for(int j=0;j<size;j++)
+	{
+	  CCD_V_pppp[CCD_V_pppp.size()-1].bra[j]=CCD_V_hhpp[i].ket[j];
+	  CCD_V_pppp[CCD_V_pppp.size()-1].ket[j]=CCD_V_hhpp[i].ket[j];
+	}
     }
 
 
+  CCD_T_hhpp=CCD_V_hhpp;
+  CCD_e_hhpp=CCD_V_hhpp;
+  for(int i=0;i<CCD_V_hhpp.size();i++)
+    {
+      int bra_dim=CCD_V_hhpp[i].bra.size();
+      int ket_dim=CCD_V_hhpp[i].ket.size();
+      CCD_V_hhpp[i].mat.resize(bra_dim,ket_dim);
+      CCD_T_hhpp[i].mat.resize(bra_dim,ket_dim);
+      CCD_e_hhpp[i].mat.resize(bra_dim,ket_dim);
+      for(int Ibra=0;Ibra<bra_dim;Ibra++)
+	{
+	  for(int Iket=0;Iket<ket_dim;Iket++)
+	    {
+	      TwoBody_Infinite *State_bra = (TwoBody_Infinite *)TwoBody_States_hh[ CCD_V_hhpp[i].bra[Ibra] ];
+	      TwoBody_Infinite *State_ket = (TwoBody_Infinite *)TwoBody_States_pp[ CCD_V_hhpp[i].ket[Iket] ];
+	      int bra_p=State_bra->p;
+	      int bra_q=State_bra->q;
+	      int ket_p=State_ket->p;
+	      int ket_q=State_ket->q;
+	      double V=V2B(bra_p,bra_q,ket_p,ket_q);
+	      double de=1.0/(V1B(bra_p,bra_p)+V1B(bra_q,bra_q)-V1B(ket_p,ket_p)-V1B(ket_q,ket_q));
+	      CCD_V_hhpp[i].mat(Ibra,Iket)=V;
+	      CCD_e_hhpp[i].mat(Ibra,Iket)=de;
+	      CCD_T_hhpp[i].mat(Ibra,Iket)=V*de;
+	    }
+	}
+    }
 
+  for(int i=0;i<CCD_V_hhhh.size();i++)
+    {
+      int dim=CCD_V_hhhh[i].bra.size();
+      CCD_V_hhhh[i].mat.resize(dim,dim);
+      for(int Ibra=0;Ibra<dim;Ibra++)
+	{
+	  for(int Iket=Ibra;Iket<dim;Iket++)
+	    {
+	      TwoBody_Infinite *State_bra = (TwoBody_Infinite *)TwoBody_States_hh[ CCD_V_hhhh[i].bra[Ibra] ];
+	      TwoBody_Infinite *State_ket = (TwoBody_Infinite *)TwoBody_States_hh[ CCD_V_hhhh[i].ket[Iket] ] ;
+	      int bra_p=State_bra->p;
+	      int bra_q=State_bra->q;
+	      int ket_p=State_ket->p;
+	      int ket_q=State_ket->q;
+	      CCD_V_hhhh[i].mat(Ibra,Iket)=V2B(bra_p,bra_q,ket_p,ket_q);
+	      CCD_V_hhhh[i].mat(Iket,Ibra)=CCD_V_hhhh[i].mat(Ibra,Iket);
+	    }
+	}
+    }
 
-
-//    for (int i = 0; i < CCD_V_hhhh.size(); i++)
-//    {
-//        Channel currentChannel = CCD_V_hhhh[i];
-//        for(int s1 = 0; s1 < currentChannel.states.size(); s1++)
-//            for(int s2 = 0; s2 < currentChannel.states.size(); s2++)
-//                currentChannel.m(s1,s2) = V2B(s1,s1,s2,s2);
-//    }
-
-//    for (int i = 0; i < CCD_V_hhhh.size(); i++)
-//        for (int j = 0; j < CCD_t_hhpp.size(); j++)
-//        {
-
-//        }
+  for(int i=0;i<CCD_V_pppp.size();i++)
+    {
+      int dim=CCD_V_pppp[i].bra.size();
+      CCD_V_pppp[i].mat.resize(dim,dim);
+      for(int Ibra=0;Ibra<dim;Ibra++)
+	{
+	  for(int Iket=Ibra;Iket<dim;Iket++)
+	    {
+	      TwoBody_Infinite *State_bra = (TwoBody_Infinite *)TwoBody_States_pp[ CCD_V_pppp[i].bra[Ibra] ];
+	      TwoBody_Infinite *State_ket = (TwoBody_Infinite *)TwoBody_States_pp[ CCD_V_pppp[i].ket[Iket] ];
+	      int bra_p=State_bra->p;
+	      int bra_q=State_bra->q;
+	      int ket_p=State_ket->p;
+	      int ket_q=State_ket->q;
+	      CCD_V_pppp[i].mat(Ibra,Iket)=V2B(bra_p,bra_q,ket_p,ket_q);
+	      CCD_V_pppp[i].mat(Iket,Ibra)=CCD_V_pppp[i].mat(Ibra,Iket);
+	    }
+	}
+    }
 }
 
+void Infinite::CCD_cal()
+{
+  generateTwoBody_States();
+  CCD_BlockMatrices();
+  vector<Channel> CCD_T_old;
+  int iter = 0;
+  CCD_deltaE=0.0;
+  double CCD_deltaE_old;
+  
+  do
+    {
+      iter++;
+      CCD_deltaE_old=CCD_deltaE;
+      CCD_T_old = CCD_T_hhpp;
+      //      CCD_t_m = CCD_e_ph.cwiseProduct(TauIter);
+      // CCD_T_hhpp = CCD_V_hhpp
+      // 	+ CCD_T_old * CCD_V_pppp
+      //   + CCD_V_hhhh * CCD_T_old;
+      for(int i=0;i<CCD_V_hhpp.size();i++)
+	{
+	  CCD_T_hhpp[i].mat=CCD_V_hhpp[i].mat
+	                  + CCD_T_old[i].mat * CCD_V_pppp[i].mat;
+	  //	          + CCD_V_hhhh[i].mat * CCD_T_old[i].mat;
+	  CCD_T_hhpp[i].mat=CCD_T_hhpp[i].mat.cwiseProduct(CCD_e_hhpp[i].mat);
+	}
+      double sum=0;
+      for(int i=0;i<CCD_V_hhpp.size();i++)
+	{
+	  sum+=(CCD_V_hhpp[i].mat*(CCD_T_hhpp[i].mat.transpose())).trace();
+	}
+      CCD_deltaE = sum;
+      cout<<iter<<"\t"<<sum<<endl;
+    }
+  while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-8);
+}

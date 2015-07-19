@@ -327,7 +327,7 @@ void System::CCD_SparseMatrices()
 
     typedef Eigen::Triplet<double> T;
     std::vector<T> tripletList;
-    tripletList.reserve(1e8);//TODO release!
+    tripletList.reserve(1e4);//TODO release!
 
     int size_p = (numberSP-A)*(numberSP-A-1)/2;
     int size_h = A*(A-1)/2;
@@ -436,8 +436,8 @@ void System::CCD_SparseMatrices()
             sum += help.coeff(k,k);
         CCD_deltaE_iter = sum;
         CCD_Tau = CCD_V_ph
-                + CCD_V_pp * CCD_t_m;
-                //+ CCD_t_m * CCD_V_hh;
+	        + CCD_V_pp * CCD_t_m;
+	  //    + CCD_t_m * CCD_V_hh;
         cerr << iter << "\t" <<CCD_deltaE_iter<< endl;
 
         CCD_t_m = CCD_e_ph.cwiseProduct(CCD_Tau);
