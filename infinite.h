@@ -24,8 +24,8 @@ const double KS = 0.465;
 class SP_Infinite : public SP_State
 {
 public:
- SP_Infinite(int _nx,int _ny, int _nz, double _kx, double _ky, double _kz, int _spin, int _isospin)
-   : nx(_nx),ny(_ny),nz(_nz),SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
+    SP_Infinite(int _nx,int _ny, int _nz, double _kx, double _ky, double _kz, int _spin, int _isospin)
+        : nx(_nx),ny(_ny),nz(_nz),SP_State(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)),
           kx(_kx), ky(_ky), kz(_kz), spin(_spin), isospin(_isospin),
           HF_spEnergy(hbar*hbar/2.0/m*(_kx*_kx + _ky*_ky + _kz*_kz)) {}
     double kx;
@@ -39,29 +39,30 @@ public:
 
 class TwoBody_Infinite: public TwoBody_State
 {
- public:
- TwoBody_Infinite(int _p,int _q,int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):TwoBody_State(_p,_q),Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
-  int Nx;
-  int Ny;
-  int Nz;
-  int Sz;
-  int Tz;
+public:
+    TwoBody_Infinite(int _p,int _q,int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):TwoBody_State(_p,_q),Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+    int Nx;
+    int Ny;
+    int Nz;
+    int Sz;
+    int Tz;
 };
-class TwoBody_comp
+
+class TwoBody_compare
 {
-  public:
-  bool operator ()(TwoBody_State*,TwoBody_State*);
+public:
+    bool operator()(TwoBody_State*,TwoBody_State*);
 };
 
 
 class Channel
 {
- public:
- Channel(int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
-  int Nx,Ny,Nz,Sz,Tz;
-  vector<int> bra,ket;
-  MatrixXd mat;
-  bool Include(TwoBody_Infinite*);
+public:
+    Channel(int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+    int Nx,Ny,Nz,Sz,Tz;
+    vector<int> bra,ket;
+    MatrixXd mat;
+    bool Include(TwoBody_Infinite*);
 };
 
 
@@ -114,8 +115,9 @@ public:
     double HF_exact_E0;
 
     //CCD
+    void CCD_generateBlockMatrices();
     void CCD_BlockMatrices();
-    void CCD_cal();
+    void CCD_BlockMatricesIntermediates();
     vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp;
 };
 
