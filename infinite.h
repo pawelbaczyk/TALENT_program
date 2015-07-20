@@ -32,8 +32,8 @@ public:
     double ky;
     double kz;
     int nx,ny,nz;
-    int spin; //0 -- spin up, 1 -- spin down
-    int isospin; //0 -- neutron, 1 -- proton
+    int spin; //1 -- spin up, -1 -- spin down
+    int isospin; //1 -- neutron, -1 -- proton
     double HF_spEnergy;//init to spEnergy
 };
 

@@ -50,13 +50,13 @@ void Infinite::generateSP_States(int A)
                         double kz = 2 * M_PI * nZ / L;
                         if (g_s == 2 || g_s == 4)
                         {
-                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,0,0));
-                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,0));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,1));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,-1,1));
                         }
                         if (g_s == 4)
                         {
-                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,0,1));
-                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,1));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,1,-1));
+                            SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,-1,-1));
                         }
                     }
     numberSP = SP_States.size();
@@ -99,8 +99,8 @@ void Infinite::generateTwoBody_States()
             int Nx=I->nx + J->nx;
             int Ny=I->ny + J->ny;
             int Nz=I->nz + J->nz;
-            int Sz=I->spin + J->spin;
-            int Tz=I->isospin + J->isospin;
+            int Sz=(I->spin + J->spin)/2;
+            int Tz=(I->isospin + J->isospin)/2;
             TwoBody_States_hh.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
     for(int i=A;i<numberSP;i++)
@@ -111,8 +111,8 @@ void Infinite::generateTwoBody_States()
             int Nx=I->nx + J->nx;
             int Ny=I->ny + J->ny;
             int Nz=I->nz + J->nz;
-            int Sz=I->spin + J->spin;
-            int Tz=I->isospin + J->isospin;
+            int Sz=(I->spin + J->spin)/2;
+            int Tz=(I->isospin + J->isospin)/2;
             TwoBody_States_ph.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
     for(int i=A;i<numberSP;i++)
@@ -123,8 +123,8 @@ void Infinite::generateTwoBody_States()
             int Nx=I->nx + J->nx;
             int Ny=I->ny + J->ny;
             int Nz=I->nz + J->nz;
-            int Sz=I->spin + J->spin;
-            int Tz=I->isospin + J->isospin;
+            int Sz=(I->spin + J->spin)/2;
+            int Tz=(I->isospin + J->isospin)/2;
             TwoBody_States_pp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
     sort(TwoBody_States_hh.begin(),TwoBody_States_hh.end(),TwoBody_compare());
