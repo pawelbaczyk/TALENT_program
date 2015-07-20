@@ -8,17 +8,12 @@ int main()
 {
   Infinite infinite(14,2,0.16,2);//A,g_s,rho,nMax
 
-  //  infinite.printSP_States();
-  //  infinite.generateTwoBody_States();
-  //   infinite.CCD_BlockMatrices();
-  //  infinite.printTwoBody_States();
-  infinite.HF_calculateE0();//IMPORTANT;
+  //  infinite.HF_calculateE0();//IMPORTANT;
   infinite.CCD_BlockMatricesIntermediates();
-   
-  //   infinite.CCD_BlockMatricesLadders();
+  infinite.CCD_BlockMatricesLadders();
 
-  // infinite.CCD_SparseMatrices();
-  //   cout<<infinite.CCD_deltaE<<endl;
+  infinite.CCD_SparseMatrices();
+  cout<<infinite.CCD_deltaE<<endl;
   // infinite.HF_calculateE0();
   // infinite.CCD_SparseMatrices();
   //  infinite.MBPT();
