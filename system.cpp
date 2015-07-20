@@ -436,9 +436,9 @@ void System::CCD_SparseMatrices()
             sum += help.coeff(k,k);
         CCD_deltaE_iter = sum;
         CCD_Tau = CCD_V_ph
-	        + CCD_V_pp * CCD_t_m;
-	  //    + CCD_t_m * CCD_V_hh;
-        cerr << iter << "\t" <<CCD_deltaE_iter<< endl;
+            + CCD_V_pp * CCD_t_m
+            + CCD_t_m * CCD_V_hh;
+        cerr << iter << "\t" << setprecision(10) << CCD_deltaE_iter<< endl;
 
         CCD_t_m = CCD_e_ph.cwiseProduct(CCD_Tau);
         help = CCD_t_m * SparseMatrix<double>(CCD_V_ph.transpose());

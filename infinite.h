@@ -66,6 +66,15 @@ public:
 };
 
 
+struct Position
+{
+public:
+    Position() : channel(-1), index(0){}
+    Position(int _channel, int _index) : channel(_channel), index(_index){}
+    int channel;
+    int index;
+};
+
 class Infinite : public System
 {
 public:
@@ -116,9 +125,10 @@ public:
 
     //CCD
     void CCD_generateBlockMatrices();
-    void CCD_BlockMatrices();
+    void CCD_BlockMatricesLadders();
     void CCD_BlockMatricesIntermediates();
     vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp;
+    Matrix<Position,Dynamic,Dynamic> CCD_position;
 };
 
 #endif
