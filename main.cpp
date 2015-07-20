@@ -12,16 +12,17 @@ int main()
   //  infinite.generateTwoBody_States();
   //   infinite.CCD_BlockMatrices();
   //  infinite.printTwoBody_States();
-   infinite.HF_calculateE0();//IMPORTANT;
-   infinite.CCD_BlockMatricesIntermediates();cout << endl;
-   infinite.CCD_BlockMatricesLadders();
+  infinite.HF_calculateE0();//IMPORTANT;
+  infinite.CCD_BlockMatricesIntermediates();
+   
+  //   infinite.CCD_BlockMatricesLadders();
 
   // infinite.CCD_SparseMatrices();
-//   cout<<infinite.CCD_deltaE<<endl;
+  //   cout<<infinite.CCD_deltaE<<endl;
   // infinite.HF_calculateE0();
   // infinite.CCD_SparseMatrices();
-   //  infinite.MBPT();
-   //  cout<<infinite.MBPT_deltaE<<endl;
+  //  infinite.MBPT();
+  //  cout<<infinite.MBPT_deltaE<<endl;
   // cout << (infinite.HF_E0+infinite.MBPT_deltaE)/infinite.A << "\t" << (infinite.HF_E0+infinite.CCD_deltaE)/infinite.A << "\t"
   //      << setprecision(10) << infinite.HF_E0/infinite.A << "\t" << infinite.HF_exact_E0 << endl;
 

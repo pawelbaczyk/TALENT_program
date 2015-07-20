@@ -127,7 +127,7 @@ public:
     void CCD_generateBlockMatrices();
     void CCD_BlockMatricesLadders();
     void CCD_BlockMatricesIntermediates();
-    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp;
+    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hphp;
     Matrix<Position,Dynamic,Dynamic> CCD_position;
 };
 
