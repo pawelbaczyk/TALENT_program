@@ -16,6 +16,9 @@ void Pairing::generateSP_States(int numberSP)//generate s.p. states (p orbits, s
     }
 }
 
+void Pairing::generateTwoBody_States()
+{
+}
 void Pairing::generateConfigurations()
 {
     int config = first(A);

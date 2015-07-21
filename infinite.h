@@ -62,7 +62,7 @@ public:
     int Nx,Ny,Nz,Sz,Tz;
     vector<int> bra,ket;
     MatrixXd mat;
-    bool Include(TwoBody_Infinite*);
+    bool Include(TwoBody_Infinite&);
 };
 
 
@@ -77,7 +77,9 @@ public:
 
 class Infinite : public System
 {
+<<<<<<< HEAD
 public:
+    ~Infinite();
     Infinite(int,int,double,int);
 
     //parameters
@@ -107,6 +109,8 @@ public:
 
 
     //twobody states
+    vector<TwoBody_Infinite*> TwoBody_States_hmp;
+    vector<TwoBody_Infinite*> TwoBody_States_hpm;
     void generateTwoBody_States();
     void printTwoBody_States();
 
@@ -135,7 +139,7 @@ public:
     void CCD_generateBlockMatrices();
     void CCD_BlockMatricesLadders();
     void CCD_BlockMatricesIntermediates();
-    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hphp;
+    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hpmhpm,CCD_V_hmphpm;
     Matrix<Position,Dynamic,Dynamic> CCD_position;
 };
 
