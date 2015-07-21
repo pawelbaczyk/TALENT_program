@@ -42,7 +42,7 @@ class System
   //two_body states
   virtual void generateTwoBody_States()=0;
   vector<TwoBody_State*> TwoBody_States_hh;
-  vector<TwoBody_State*> TwoBody_States_ph;
+  vector<TwoBody_State*> TwoBody_States_hp;
   vector<TwoBody_State*> TwoBody_States_pp;
 
   //configurations

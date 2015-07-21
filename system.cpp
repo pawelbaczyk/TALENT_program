@@ -14,9 +14,9 @@ System::~System()
     {
       delete TwoBody_States_hh[i];
     }
-  for(int i=0;i<TwoBody_States_ph.size();i++)
+  for(int i=0;i<TwoBody_States_hp.size();i++)
     {
-      delete TwoBody_States_ph[i];
+      delete TwoBody_States_hp[i];
     }
   for(int i=0;i<TwoBody_States_pp.size();i++)
     {
