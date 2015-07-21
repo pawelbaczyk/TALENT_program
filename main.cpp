@@ -8,9 +8,6 @@ int main()
 {
   Infinite infinite(2,2,0.16,1);//A,g_s,rho,nMax
 
-<<<<<<< HEAD
-
-=======
   infinite.HF_calculateE0();//IMPORTANT;
 
   
@@ -30,7 +27,6 @@ int main()
   // pairing.CCD_OnFlight();
   //pairing.MBPT();
   // cout << pairing.MBPT_deltaE << "\t" << pairing.CCD_deltaE << endl;
->>>>>>> f08fd8fbe494c8727c7a5f4caa7170e57e376196
 
   return 0;
 }
