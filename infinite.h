@@ -4,9 +4,7 @@
 #include "system.h"
 #include "help.h"
 #include <iomanip>
-#include <map>
 #include <cstdio>
-#include <string>
 
 
 const double hbar = 197.326968;//TODO
