@@ -40,7 +40,8 @@ public:
 class TwoBody_Infinite: public TwoBody_State
 {
 public:
-    TwoBody_Infinite(int _p,int _q,int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):TwoBody_State(_p,_q),Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+    TwoBody_Infinite(int _p,int _q,int _Nx,int _Ny,int _Nz,int _Sz,int _Tz)
+        : TwoBody_State(_p,_q),Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
     int Nx;
     int Ny;
     int Nz;
@@ -58,7 +59,8 @@ public:
 class Channel
 {
 public:
-    Channel(int _Nx,int _Ny,int _Nz,int _Sz,int _Tz):Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
+    Channel(int _Nx,int _Ny,int _Nz,int _Sz,int _Tz)
+        : Nx(_Nx),Ny(_Ny),Nz(_Nz),Sz(_Sz),Tz(_Tz){}
     int Nx,Ny,Nz,Sz,Tz;
     vector<int> bra,ket;
     MatrixXd mat;
@@ -90,6 +92,14 @@ public:
     //gauss-legendre points and weights in range [-1,1]
     vector<double> gauss_x;
     vector<double> gauss_w;
+
+    //gauss-legendre points and weights in range [-1,1]
+    vector<double> twisted_x;
+    vector<double> twisted_w;
+    double thetaX, thetaY, thetaZ;
+    void setTheta(double,double,double);
+    void TA_calculateE0(int);
+
 
     void setRho(double);
 

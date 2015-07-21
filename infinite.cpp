@@ -26,10 +26,14 @@ bool Channel::Include(TwoBody_Infinite *TwoBody)
     return false;
 }
 
-Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax) : System(_A),gauss_x(100),gauss_w(100)
+Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax)
+    : System(_A), gauss_x(100), gauss_w(100)
 {
     g_s = _g_s;
     nMax = _nMax;
+    thetaX = 0.0;
+    thetaY = 0.0;
+    thetaZ = 0.0;
     setRho(_rho);
     gauleg(-1,1,gauss_x,gauss_w);
 }
@@ -45,9 +49,9 @@ void Infinite::generateSP_States(int A)
                 for (int nZ = -nMax; nZ <= nMax; nZ++)
                     if (nX*nX + nY*nY + nZ*nZ == N)
                     {
-                        double kx = 2 * M_PI * nX / L;
-                        double ky = 2 * M_PI * nY / L;
-                        double kz = 2 * M_PI * nZ / L;
+                        double kx = (2 * M_PI * nX + thetaX) / L;
+                        double ky = (2 * M_PI * nY + thetaY) / L;
+                        double kz = (2 * M_PI * nZ + thetaZ) / L;
                         if (g_s == 2 || g_s == 4)
                         {
                             SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,0,0));
@@ -60,16 +64,37 @@ void Infinite::generateSP_States(int A)
                         }
                     }
     numberSP = SP_States.size();
-    //HF_calculateE0;
+    HF_calculateE0();//to set HF s.p. energies
 }
 
 void Infinite::setRho(double _rho)
 {
     rho = _rho;
     generateSP_States(A);
-    //    cout << "Generating matrices" << endl;
-    //    map_generateV2B();
-    //    cout << "Done" << endl;
+}
+
+void Infinite::setTheta(double _thetaX, double _thetaY, double _thetaZ)
+{
+    thetaX = _thetaX;
+    thetaY = _thetaY;
+    thetaZ = _thetaZ;
+    generateSP_States(A);
+}
+
+void Infinite::TA_calculateE0(int nA)
+{
+    twisted_x.resize(nA);
+    twisted_w.resize(nA);
+    gauleg(0,M_PI,twisted_x,twisted_w);
+    for (int x = 0; x < twisted_x.size(); x++)
+        for (int y = 0; y < twisted_x.size(); y++)
+            for (int z = 0; z < twisted_x.size(); z++)
+            {
+                setTheta(twisted_x[x],twisted_x[y],twisted_x[z]);
+                CCD_BlockMatricesLadders();
+                cout << setprecision(10) << CCD_deltaE << endl;
+                cout << endl;
+            }
 }
 
 void Infinite::printSP_States()
@@ -80,11 +105,9 @@ void Infinite::printSP_States()
         cout << std::fixed << i+1 << "\t" << state->spEnergy << "\t"
              << state->kx << "\t" << state->ky << "\t" << state->kz << "\t"
              << (state->spin == 0 ? "+" : "-") << "\t" << (state->isospin == 0 ? "n" : "p")
-             << endl;
+             << endl;//TODO spin and isospin definition changed
     }
 }
-
-
 
 void Infinite::generateTwoBody_States()
 {
@@ -254,14 +277,16 @@ double Infinite::HF_exact_f(double r)
             pow(3*J1(k_F*r)/(k_F*r),2)*
             (vs*vs*vt*vt*V4 + vs*vt*vt*V3 + vt*vs*vs*V2 + vs*vt*V1);
 }
+
 void Infinite::HF_cal_exact_E0()
 {
-    HF_exact_E0=0.3 * hbar*hbar /m * k_F*k_F;
-    for(int i=0;i<gauss_x.size();i++)
+    HF_exact_E0 = 0.3 * hbar*hbar / m * k_F * k_F;
+    for(int i = 0; i < gauss_x.size(); i++)
     {
-        double temp=M_PI*0.25*(gauss_x[i] + 1);
-        double r=tan(temp);
-        HF_exact_E0+=rho * 2*M_PI/(g_s*g_s) * r*r * HF_exact_f(r) * gauss_w[i]* M_PI*0.25/pow(cos(temp),2);
+        double temp = M_PI * 0.25 * (gauss_x[i] + 1);
+        double r = tan(temp);
+        HF_exact_E0 += rho * 2*M_PI/(g_s*g_s)
+                * r * r * HF_exact_f(r) * gauss_w[i] * M_PI * 0.25 / pow(cos(temp),2);
     }
 }
 
@@ -516,9 +541,9 @@ void Infinite::CCD_BlockMatricesIntermediates()
         CCD_T_old = CCD_T_hhpp;
 
         //one body intermediate
+        //particle part
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
             helpMatrix[i].mat = CCD_T_hhpp[i].mat.transpose() * CCD_V_hhpp[i].mat;
-        //particle part
         for (int b = A; b < numberSP; b++)
         {
             CCD_intermediate_1B[b] = V1B(b,b);
@@ -534,7 +559,6 @@ void Infinite::CCD_BlockMatricesIntermediates()
         helpMatrix = CCD_V_hhhh;
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
             helpMatrix[i].mat = CCD_T_hhpp[i].mat * CCD_V_hhpp[i].mat.transpose();
-        //particle part
         for (int k = 0; k < A; k++)
         {
             CCD_intermediate_1B[k] = V1B(k,k);
@@ -572,9 +596,9 @@ void Infinite::CCD_BlockMatricesIntermediates()
             sum += (CCD_V_hhpp[i].mat*(CCD_T_hhpp[i].mat.transpose())).trace();
         }
         CCD_deltaE = sum;
-        cout << iter << "\t" << setprecision(10) << sum << endl;
+        //cout << iter << "\t" << setprecision(10) << sum << endl;
     }
-    while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-8);
+    while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-9);
 }
 
 //void Infinite::MatrixElement(vector<Channel> &channels, int p, int q, int r, int s)

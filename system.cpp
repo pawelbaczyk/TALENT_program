@@ -188,35 +188,35 @@ void System::CCD_OnFlight()
             index2++;
         }
 
-    CCD_V_pp.resize(size_p,size_p);
-    index2 = 0;
-    for (int c = A; c < numberSP; c++)
-        for (int d = c+1; d < numberSP; d++)
-        {
-            index1 = 0;
-            for (int a = A; a < numberSP; a++)
-                for (int b = a+1; b < numberSP; b++)
-                {
-                    CCD_V_pp(index1,index2) = V2B(a,b,c,d);
-                    index1++;
-                }
-            index2++;
-        }
+//    CCD_V_pp.resize(size_p,size_p);
+//    index2 = 0;
+//    for (int c = A; c < numberSP; c++)
+//        for (int d = c+1; d < numberSP; d++)
+//        {
+//            index1 = 0;
+//            for (int a = A; a < numberSP; a++)
+//                for (int b = a+1; b < numberSP; b++)
+//                {
+//                    CCD_V_pp(index1,index2) = V2B(a,b,c,d);
+//                    index1++;
+//                }
+//            index2++;
+//        }
 
-    CCD_V_hh.resize(size_h,size_h);
-    index2 = 0;
-    for (int i = 0; i < A; i++)
-        for (int j = i+1; j < A; j++)
-        {
-            index1 = 0;
-            for (int k = 0; k < A; k++)
-                for (int l = k+1; l < A; l++)
-                {
-                    CCD_V_hh(index1,index2) = V2B(k,l,i,j);
-                    index1++;
-                }
-            index2++;
-        }
+//    CCD_V_hh.resize(size_h,size_h);
+//    index2 = 0;
+//    for (int i = 0; i < A; i++)
+//        for (int j = i+1; j < A; j++)
+//        {
+//            index1 = 0;
+//            for (int k = 0; k < A; k++)
+//                for (int l = k+1; l < A; l++)
+//                {
+//                    CCD_V_hh(index1,index2) = V2B(k,l,i,j);
+//                    index1++;
+//                }
+//            index2++;
+//        }
 
     CCD_e_ph.resize(size_p,size_h);
     index2 = 0;
@@ -272,20 +272,20 @@ void System::CCD_OnFlight()
                         for (int k = 0; k < A; k++)
                             for (int l = 0; l < A; l++)
                                 help += 0.5 * V2B(k,l,i,j) * CCD_OnFlight_t(k,l,a,b);
-                        for (int k = 0; k < A; k++)
-                            for (int c = A; c < numberSP; c++)
-                                help += V2B(k,b,c,j) * CCD_OnFlight_t(i,k,a,c)
-                                      - V2B(k,b,c,i) * CCD_OnFlight_t(j,k,a,c)
-                                      - V2B(k,a,c,j) * CCD_OnFlight_t(i,k,b,c)
-                                      + V2B(k,a,c,i) * CCD_OnFlight_t(j,k,b,c);
+//                        for (int k = 0; k < A; k++)
+//                            for (int c = A; c < numberSP; c++)
+//                                help += V2B(k,b,c,j) * CCD_OnFlight_t(i,k,a,c)
+//                                      - V2B(k,b,c,i) * CCD_OnFlight_t(j,k,a,c)
+//                                      - V2B(k,a,c,j) * CCD_OnFlight_t(i,k,b,c)
+//                                      + V2B(k,a,c,i) * CCD_OnFlight_t(j,k,b,c);
                         for (int k = 0; k < A; k++)
                             for (int l = 0; l < A; l++)
                                 for (int c = A; c < numberSP; c++)
                                     for (int d = A; d < numberSP; d++)
                                     {
                                         help += 0.25 * V2B(k,l,c,d) * CCD_OnFlight_t(i,j,c,d) * CCD_OnFlight_t(k,l,a,b);
-                                        help += V2B(k,l,c,d) * CCD_OnFlight_t(i,k,a,c) * CCD_OnFlight_t(j,l,b,d)
-                                              - V2B(k,l,c,d) * CCD_OnFlight_t(j,k,a,c) * CCD_OnFlight_t(i,l,b,d);
+//                                        help += V2B(k,l,c,d) * CCD_OnFlight_t(i,k,a,c) * CCD_OnFlight_t(j,l,b,d)
+//                                              - V2B(k,l,c,d) * CCD_OnFlight_t(j,k,a,c) * CCD_OnFlight_t(i,l,b,d);
                                         help += -0.5 * V2B(k,l,c,d) * CCD_OnFlight_t(i,k,d,c) * CCD_OnFlight_t(l,j,a,b)
                                               +  0.5 * V2B(k,l,c,d) * CCD_OnFlight_t(j,k,d,c) * CCD_OnFlight_t(l,i,a,b);
                                         help += -0.5 * V2B(k,l,c,d) * CCD_OnFlight_t(l,k,a,c) * CCD_OnFlight_t(i,j,d,b)
@@ -299,8 +299,9 @@ void System::CCD_OnFlight()
             }
         CCD_OnFlight_t_m = CCD_e_ph.array() * CCD_Tau.array();
         CCD_deltaE = (CCD_OnFlight_t_m * CCD_V_ph.transpose()).trace();
+        cerr << iter << "\t" << setprecision(10) << CCD_deltaE<< endl;
     }
-    while (abs(CCD_deltaE_iter - CCD_deltaE) > 1e-8);
+    while (abs(CCD_deltaE_iter - CCD_deltaE) > 1e-9);//TODO this is not onFlight
     CCD_OnFlight_t_m = CCD_e_ph.array() * CCD_Tau.array();
     CCD_deltaE = (CCD_OnFlight_t_m * CCD_V_ph.transpose()).trace();
 }

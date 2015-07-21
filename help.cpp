@@ -50,7 +50,7 @@ void gauleg(const double x1, const double x2, vector<double> &x, vector<double> 
   xl=0.5*(x2-x1);
   for (int i=0;i<m;i++)
     {
-      z=cos(3.141592654*(i+0.75)/(n+0.5));
+      z=cos(M_PI*(i+0.75)/(n+0.5));
       do {
 	p1=1.0;
 	p2=0.0;
