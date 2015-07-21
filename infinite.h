@@ -79,7 +79,6 @@ class Infinite : public System
 {
 <<<<<<< HEAD
 public:
-    ~Infinite();
     Infinite(int,int,double,int);
 
     //parameters
@@ -109,8 +108,6 @@ public:
 
 
     //twobody states
-    vector<TwoBody_Infinite*> TwoBody_States_hmp;
-    vector<TwoBody_Infinite*> TwoBody_States_hpm;
     void generateTwoBody_States();
     void printTwoBody_States();
 
@@ -139,8 +136,67 @@ public:
     void CCD_generateBlockMatrices();
     void CCD_BlockMatricesLadders();
     void CCD_BlockMatricesIntermediates();
-    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hpmhpm,CCD_V_hmphpm;
+    vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hphp;
     Matrix<Position,Dynamic,Dynamic> CCD_position;
+=======
+ public:
+  ~Infinite();
+  Infinite(int,int,double,int);
+
+  //parameters
+  int g_s;
+  double k_F;
+  double rho;
+  int nMax;
+  double L;
+
+  //gauss-legendre points and weights in range [-1,1]
+  vector<double> gauss_x;
+  vector<double> gauss_w;
+
+  void setRho(double);
+
+  //single particle states
+  void generateSP_States(int);
+  void printSP_States();
+
+
+  //twobody states
+  vector<TwoBody_Infinite*> TwoBody_States_hmp;
+  vector<TwoBody_Infinite*> TwoBody_States_hpm;
+  void generateTwoBody_States();
+  void printTwoBody_States();
+
+  //configurations
+  void generateConfigurations();
+  void printConfigurations();
+
+  //matrix elements
+  double V1B(int,int);
+  double V2B(int,int,int,int);
+  double V2B_sym(int,int,int,int);
+  bool deltaSpin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+  bool deltaIsospin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+  bool deltaSpinIsospin(SP_Infinite*, SP_Infinite*, SP_Infinite*, SP_Infinite*);
+
+  //HF
+  void HF_calculateE0();
+  double HF_E0;
+
+  //exact HF
+  double HF_exact_f(double r);
+  void HF_cal_exact_E0();
+  double HF_exact_E0;
+
+  //CCD
+  void CCD_generateBlockMatrices();
+  void CCD_BlockMatricesLadders();
+  void CCD_BlockMatricesIntermediates();
+  void hhppTohphp(vector<Channel>&,vector<Channel>&);
+  void hphpTohhpp(vector<Channel>&,vector<Channel>&);
+  vector<Channel> CCD_V_hhhh, CCD_V_hhpp,CCD_V_pppp,CCD_T_hhpp,CCD_e_hhpp,CCD_V_hpmhpm,CCD_V_hmphpm;
+  Matrix<Position,Dynamic,Dynamic> CCD_position;
+>>>>>>> f08fd8fbe494c8727c7a5f4caa7170e57e376196
 };
 
 #endif
