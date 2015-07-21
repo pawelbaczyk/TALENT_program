@@ -24,7 +24,7 @@ int main()
     infinite.TA_calculateE0(6);
 
 //   cout<<infinite.CCD_deltaE<<endl;
-=======
+
   infinite.HF_calculateE0();//IMPORTANT;
   infinite.CCD_BlockMatricesIntermediates();
 
@@ -32,7 +32,6 @@ int main()
 
   // infinite.CCD_SparseMatrices();
   //   cout<<infinite.CCD_deltaE<<endl;
->>>>>>> aed963383f42f5d79dbef8e9a5d46e650965e75e
   // infinite.HF_calculateE0();
   // infinite.CCD_SparseMatrices();
   //  infinite.MBPT();
