@@ -6,22 +6,24 @@
 
 class Pairing : public System
 {
-public:
-    Pairing(int,int,double);
+ public:
+  Pairing(int,int,double);
 
-    //parameters
-    double g;
+  //parameters
+  double g;
 
-    //single particle states
-    void generateSP_States(int);
+  //single particle states
+  void generateSP_States(int);
 
-    //configurations
-    void generateConfigurations();
-    void printConfigurations();
+  void generateTwoBody_States();
 
-    //matrix elements
-    double V1B(int,int);
-    double V2B(int,int,int,int);
+  //configurations
+  void generateConfigurations();
+  void printConfigurations();
+
+  //matrix elements
+  double V1B(int,int);
+  double V2B(int,int,int,int);
 };
 
 class SP_Pairing : public SP_State
