@@ -655,6 +655,33 @@ void Infinite::CCD_generateBlockMatrices()
         }
     }
     
+//    for (int channel = 0; channel < CCD_V_hmphpm.size(); channel++)
+//    {
+//        for (int Ibra = 0; Ibra < CCD_V_hmphpm[channel].bra.size(); Ibra++)
+//            for (int Iket = 0; Iket < CCD_V_hmphpm[channel].ket.size(); Iket++)
+//            {
+//                TwoBody_Infinite *State_bra = (TwoBody_Infinite*)TwoBody_States_hmp[ CCD_V_hmphpm[channel].bra[Ibra] ];
+//                TwoBody_Infinite *State_ket = (TwoBody_Infinite*)TwoBody_States_hpm[ CCD_V_hmphpm[channel].ket[Iket] ];
+//                int sign = +1;
+//                int i = State_bra->p;
+//                int b = State_bra->q;
+//                int j = State_ket->p;
+//                int a = State_ket->q;
+//                if (b > a)
+//                    sign *= -1;
+//                if (i > j)
+//                    sign *= -1;
+//                Position pos_pp = CCD_position(a,b);
+//                Position pos_hh = CCD_position(i,j);
+//                if (pos_pp.channel != -1)
+//                   if (abs(CCD_V_hmphpm[channel].mat(Ibra,Iket)
+//                           - sign * CCD_V_hhpp[pos_pp.channel].mat(pos_hh.index,pos_pp.index)) > 1e-6)
+//                       cout << "NIE\t" << CCD_V_hmphpm[channel].mat(Ibra,Iket)
+//                            << "\t"<< sign * CCD_V_hhpp[pos_pp.channel].mat(pos_hh.index,pos_pp.index)
+//                               << endl;
+//            }
+//    }
+
 
 
 //        for (int i = 0; i < CCD_V_hpmhpm.size(); i++)
@@ -702,11 +729,12 @@ void Infinite::CCD_BlockMatricesLadders()
     while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-8);
 }
 
+
 void Infinite::CCD_BlockMatricesIntermediates()
 {
     generateTwoBody_States();
     CCD_generateBlockMatrices();
-    vector<Channel> CCD_T_old;
+    vector<Channel> CCD_T_old = CCD_T_hhpp;
     int iter = 0;
     CCD_deltaE = 0.0;
 
@@ -727,12 +755,15 @@ void Infinite::CCD_BlockMatricesIntermediates()
     {
         iter++;
         CCD_deltaE_old = CCD_deltaE;
-        CCD_T_old = CCD_T_hhpp;
+        //CCD_T_old = CCD_T_hhpp;
+        double alpha = 0.0;
+        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+            CCD_T_old[i].mat = alpha * CCD_T_old[i].mat + (1-alpha) * CCD_T_hhpp[i].mat;
 
         //one body intermediate
         //particle part
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
-            helpMatrix[i].mat = CCD_T_hhpp[i].mat.transpose() * CCD_V_hhpp[i].mat;
+            helpMatrix[i].mat = CCD_T_old[i].mat.transpose() * CCD_V_hhpp[i].mat;
         for (int b = A; b < numberSP; b++)
         {
             CCD_intermediate_1B[b] = V1B(b,b);
@@ -747,7 +778,7 @@ void Infinite::CCD_BlockMatricesIntermediates()
         //hole part
         helpMatrix = CCD_V_hhhh;
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
-            helpMatrix[i].mat = CCD_T_hhpp[i].mat * CCD_V_hhpp[i].mat.transpose();
+            helpMatrix[i].mat = CCD_T_old[i].mat * CCD_V_hhpp[i].mat.transpose();
         for (int k = 0; k < A; k++)
         {
             CCD_intermediate_1B[k] = V1B(k,k);
@@ -764,7 +795,7 @@ void Infinite::CCD_BlockMatricesIntermediates()
         //hhhh part
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
             CCD_intermediate_hhhh[i].mat = CCD_V_hhhh[i].mat
-                    + CCD_V_hhpp[i].mat * CCD_T_hhpp[i].mat.transpose();
+                    + CCD_V_hhpp[i].mat * CCD_T_old[i].mat.transpose();
         //difficult part
         for (int channel = 0; channel < CCD_V_hmphpm.size(); channel++)
         {
@@ -773,63 +804,46 @@ void Infinite::CCD_BlockMatricesIntermediates()
                 {
                     TwoBody_Infinite *State_bra = (TwoBody_Infinite*)TwoBody_States_hmp[ CCD_V_hmphpm[channel].bra[Ibra] ];
                     TwoBody_Infinite *State_ket = (TwoBody_Infinite*)TwoBody_States_hpm[ CCD_V_hmphpm[channel].ket[Iket] ];
+
                     int i = State_bra->p;
-                    int b = State_bra->q;
+        int a = State_bra->q;
                     int j = State_ket->p;
-                    int a = State_ket->q;
+        int b = State_ket->q;
                     Position pos_pp = CCD_position(a,b);
                     Position pos_hh = CCD_position(i,j);
-                    if (pos_pp.channel != -1)
+        int sign=(i-j)*(a-b) > 0 ? 1 : -1;
+        if (pos_pp.channel != -1 && pos_hh.channel != -1 && pos_pp.channel==pos_hh.channel)
                        CCD_T_hmphpm[channel].mat(Ibra,Iket)
-                               = CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index);
+                               = sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index);
                     else
                         CCD_T_hmphpm[channel].mat(Ibra,Iket) = 0.0;
+
+                       //to remove
+                    if (pos_pp.channel != -1 && pos_hh.channel != -1)
+                   if (abs(CCD_T_hmphpm[channel].mat(Ibra,Iket)
+                           - sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index)) > 1e-6)
+                       cout << "NO\t" << CCD_T_hmphpm[channel].mat(Ibra,Iket)
+                            << "\t"<< sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index)
+                               << endl;
                 }
         }
-        helpMatrix = CCD_V_hpmhpm;
         for (int i = 0; i < CCD_V_hmphpm.size(); i++)
         {
-            helpMatrix[i].mat = CCD_V_hmphpm[i].mat.transpose() * CCD_T_hmphpm[i].mat;
+            CCD_intermediate_hpmhpm[i].mat = CCD_V_hpmhpm[i].mat +
+                    0.5 * CCD_V_hmphpm[i].mat.transpose() * CCD_T_hmphpm[i].mat;
         }
-        CCD_intermediate_hpmhpm = CCD_V_hpmhpm;
-        for (int channel = 0; channel < CCD_intermediate_hpmhpm.size(); channel++)
-            for (int Ibra = 0; Ibra < CCD_intermediate_hpmhpm[channel].bra.size(); Ibra++)
-                for (int Iket = 0; Iket < CCD_intermediate_hpmhpm[channel].ket.size(); Iket++)
-                {
-                    TwoBody_Infinite *State_bra
-                            = (TwoBody_Infinite*)TwoBody_States_hpm[ CCD_intermediate_hpmhpm[channel].bra[Ibra] ];
-                    TwoBody_Infinite *State_ket
-                            = (TwoBody_Infinite*)TwoBody_States_hpm[ CCD_intermediate_hpmhpm[channel].ket[Iket] ];
-                    int k = State_bra->p;
-                    int c = State_bra->q;
-                    int j = State_ket->p;
-                    int b = State_ket->q;
-                    Position pos_bra = CCD_position(k,c);
-                    Position pos_ket = CCD_position(j,c);
-                    if ((pos_bra.channel == -1) || (pos_ket.channel == -1)
-                            || (pos_bra.channel != pos_ket.channel))
-                            continue;
-                    CCD_intermediate_hpmhpm[channel].mat(Ibra,Iket)
-                            += helpMatrix[pos_bra.channel].mat(pos_bra.index,pos_ket.index);
-                }
         helpMatrix = CCD_V_hmphpm;
-        for (int i = 0; i < CCD_intermediate_hpmhpm.size(); i++)
+        for (int i = 0; i < CCD_V_hmphpm.size(); i++)
         {
             helpMatrix[i].mat = CCD_T_hmphpm[i].mat * CCD_intermediate_hpmhpm[i].mat;
         }
+
         //calculations
         for (int i = 0; i < CCD_V_hhpp.size(); i++)
         {
             CCD_T_hhpp[i].mat = CCD_V_hhpp[i].mat
                     + CCD_T_old[i].mat * CCD_intermediate_pppp[i].mat
                     + CCD_intermediate_hhhh[i].mat * CCD_T_old[i].mat;
-            for (int Ibra = 0; Ibra < CCD_T_old[i].bra.size(); Ibra++)
-                for (int Iket = 0; Iket < CCD_T_old[i].ket.size(); Iket++)
-                    CCD_T_hhpp[i].mat(Ibra,Iket) /=
-                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->p]
-                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->q]
-                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->p]
-                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->q];
         }
         for (int channel = 0; channel < helpMatrix.size(); channel++)
         {
@@ -838,19 +852,32 @@ void Infinite::CCD_BlockMatricesIntermediates()
                 {
                     TwoBody_Infinite *State_bra = (TwoBody_Infinite*)TwoBody_States_hmp[ helpMatrix[channel].bra[Ibra] ];
                     TwoBody_Infinite *State_ket = (TwoBody_Infinite*)TwoBody_States_hpm[ helpMatrix[channel].ket[Iket] ];
+
                     int i = State_bra->p;
                     int a = State_bra->q;
                     int j = State_ket->p;
                     int b = State_ket->q;
+            int sign=(i-j)*(a-b) > 0 ? 1 : -1;
                     Position pos_pp = CCD_position(a,b);
                     Position pos_hh = CCD_position(i,j);//check
-                    if ((pos_pp.channel == -1) || (pos_hh.channel == -1)
-                         || (pos_pp.channel != pos_hh.channel))
-                            continue;
+            if ((pos_pp.channel != -1) && (pos_hh.channel != - 1)
+                && (pos_pp.channel == pos_hh.channel))
                     CCD_T_hhpp[pos_pp.channel].mat(pos_hh.index,pos_pp.index)
-                            += helpMatrix[channel].mat(Ibra,Iket);
+                            += sign * helpMatrix[channel].mat(Ibra,Iket);
                 }
         }
+        //dividing by 1B terms
+        for (int i = 0; i < CCD_V_hhpp.size(); i++)
+        {
+            for (int Ibra = 0; Ibra < CCD_T_old[i].bra.size(); Ibra++)
+                for (int Iket = 0; Iket < CCD_T_old[i].ket.size(); Iket++)
+                    CCD_T_hhpp[i].mat(Ibra,Iket) /=
+                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->p]
+                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->q]
+                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->p]
+                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->q];
+        }
+
         double sum = 0;
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
         {
@@ -861,6 +888,172 @@ void Infinite::CCD_BlockMatricesIntermediates()
     }
     while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-9);
 }
+
+//void Infinite::CCD_BlockMatricesIntermediates()
+//{
+//    generateTwoBody_States();
+//    CCD_generateBlockMatrices();
+//    vector<Channel> CCD_T_old = CCD_T_hhpp;
+//    int iter = 0;
+//    CCD_deltaE = 0.0;
+
+//    vector<double> CCD_intermediate_1B(numberSP,0.0);
+//    vector<Channel> helpMatrix = CCD_V_pppp;
+
+//    vector<Channel> CCD_intermediate_hhhh, CCD_intermediate_pppp;
+//    CCD_intermediate_pppp = CCD_V_pppp;
+//    CCD_intermediate_hhhh = CCD_V_hhhh;
+
+//    vector<Channel> CCD_intermediate_hmphpm, CCD_intermediate_hpmhpm, CCD_T_hmphpm;
+//    CCD_intermediate_hmphpm = CCD_V_hmphpm;
+//    CCD_intermediate_hpmhpm = CCD_V_hpmhpm;
+//    CCD_T_hmphpm = CCD_V_hmphpm;
+
+//    double CCD_deltaE_old;
+//    do
+//    {
+//        iter++;
+//        CCD_deltaE_old = CCD_deltaE;
+//        //CCD_T_old = CCD_T_hhpp;
+//        double alpha = 0.0;
+//        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+//            CCD_T_old[i].mat = alpha * CCD_T_old[i].mat + (1-alpha) * CCD_T_hhpp[i].mat;
+
+//        //one body intermediate
+//        //particle part
+//        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+//            helpMatrix[i].mat = CCD_T_old[i].mat.transpose() * CCD_V_hhpp[i].mat;
+//        for (int b = A; b < numberSP; b++)
+//        {
+//            CCD_intermediate_1B[b] = V1B(b,b);
+//            for (int d = A; d < numberSP; d++)
+//            {
+//                Position pos = CCD_position(b,d);
+//                if (pos.channel != -1)
+//                    CCD_intermediate_1B[b] +=
+//                            -1.0 * helpMatrix[pos.channel].mat(pos.index,pos.index);
+//            }
+//        }
+//        //hole part
+//        helpMatrix = CCD_V_hhhh;
+//        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+//            helpMatrix[i].mat = CCD_T_old[i].mat * CCD_V_hhpp[i].mat.transpose();
+//        for (int k = 0; k < A; k++)
+//        {
+//            CCD_intermediate_1B[k] = V1B(k,k);
+//            for (int j = 0; j < A; j++)
+//            {
+//                Position pos = CCD_position(k,j);
+//                if (pos.channel != -1)
+//                    CCD_intermediate_1B[k] +=
+//                            +1.0 * helpMatrix[pos.channel].mat(pos.index,pos.index);
+//            }
+//        }
+//        //pppp part
+//        CCD_intermediate_pppp = CCD_V_pppp;
+//        //hhhh part
+//        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+//            CCD_intermediate_hhhh[i].mat = CCD_V_hhhh[i].mat
+//                    + CCD_V_hhpp[i].mat * CCD_T_old[i].mat.transpose();
+//        //difficult part
+//        for (int channel = 0; channel < CCD_V_hmphpm.size(); channel++)
+//        {
+//            for (int Ibra = 0; Ibra < CCD_V_hmphpm[channel].bra.size(); Ibra++)
+//                for (int Iket = 0; Iket < CCD_V_hmphpm[channel].ket.size(); Iket++)
+//                {
+//                    TwoBody_Infinite *State_bra = (TwoBody_Infinite*)TwoBody_States_hmp[ CCD_V_hmphpm[channel].bra[Ibra] ];
+//                    TwoBody_Infinite *State_ket = (TwoBody_Infinite*)TwoBody_States_hpm[ CCD_V_hmphpm[channel].ket[Iket] ];
+//                    int sign = +1;
+//                    int i = State_bra->p;
+//                    int a = State_bra->q;
+//                    int j = State_ket->p;
+//                    int b = State_ket->q;
+//                    if (a > b)
+//                        sign *= -1;
+//                    if (i > j)
+//                        sign *= -1;
+//                    Position pos_pp = CCD_position(a,b);
+//                    Position pos_hh = CCD_position(i,j);
+//                    if (pos_pp.channel != -1)
+//                       CCD_T_hmphpm[channel].mat(Ibra,Iket)
+//                               = sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index);
+//                    else
+//                        CCD_T_hmphpm[channel].mat(Ibra,Iket) = 0.0;
+
+//                       //to remove
+//                    if (pos_pp.channel != -1)
+//                   if (abs(CCD_T_hmphpm[channel].mat(Ibra,Iket)
+//                           - sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index)) > 1e-6)
+//                       cout << "NO\t" << CCD_T_hmphpm[channel].mat(Ibra,Iket)
+//                            << "\t"<< sign * CCD_T_old[pos_pp.channel].mat(pos_hh.index,pos_pp.index)
+//                               << endl;
+//                }
+//        }
+//        for (int i = 0; i < CCD_V_hmphpm.size(); i++)
+//        {
+//            CCD_intermediate_hpmhpm[i].mat = CCD_V_hpmhpm[i].mat +
+//                    0.5 * CCD_V_hmphpm[i].mat.transpose() * CCD_T_hmphpm[i].mat;
+//        }
+//        helpMatrix = CCD_V_hmphpm;
+//        for (int i = 0; i < CCD_V_hmphpm.size(); i++)
+//        {
+//            helpMatrix[i].mat = CCD_T_hmphpm[i].mat * CCD_intermediate_hpmhpm[i].mat;
+//        }
+
+//        //calculations
+//        for (int i = 0; i < CCD_V_hhpp.size(); i++)
+//        {
+//            CCD_T_hhpp[i].mat = CCD_V_hhpp[i].mat
+//                    + CCD_T_old[i].mat * CCD_intermediate_pppp[i].mat
+//                    + CCD_intermediate_hhhh[i].mat * CCD_T_old[i].mat;
+//        }
+//        for (int channel = 0; channel < helpMatrix.size(); channel++)
+//        {
+//            for (int Ibra = 0; Ibra < helpMatrix[channel].bra.size(); Ibra++)
+//                for (int Iket = 0; Iket < helpMatrix[channel].ket.size(); Iket++)
+//                {
+//                    TwoBody_Infinite *State_bra = (TwoBody_Infinite*)TwoBody_States_hmp[ helpMatrix[channel].bra[Ibra] ];
+//                    TwoBody_Infinite *State_ket = (TwoBody_Infinite*)TwoBody_States_hpm[ helpMatrix[channel].ket[Iket] ];
+//                    int sign = +1;
+//                    int i = State_bra->p;
+//                    int a = State_bra->q;
+//                    int j = State_ket->p;
+//                    int b = State_ket->q;
+//                    if (i > j)
+//                        sign *= -1;
+//                    if (a > b)
+//                        sign *= -1;
+//                    Position pos_pp = CCD_position(a,b);
+//                    Position pos_hh = CCD_position(i,j);//check
+//                    if ((pos_pp.channel == -1) || (pos_hh.channel == -1)
+//                         || (pos_pp.channel != pos_hh.channel))
+//                            continue;
+//                    CCD_T_hhpp[pos_pp.channel].mat(pos_hh.index,pos_pp.index)
+//                            += sign * helpMatrix[channel].mat(Ibra,Iket);
+//                }
+//        }
+//        //dividing by 1B terms
+//        for (int i = 0; i < CCD_V_hhpp.size(); i++)
+//        {
+//            for (int Ibra = 0; Ibra < CCD_T_old[i].bra.size(); Ibra++)
+//                for (int Iket = 0; Iket < CCD_T_old[i].ket.size(); Iket++)
+//                    CCD_T_hhpp[i].mat(Ibra,Iket) /=
+//                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->p]
+//                            + CCD_intermediate_1B[TwoBody_States_hh[ CCD_T_old[i].bra[Ibra] ]->q]
+//                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->p]
+//                            - CCD_intermediate_1B[TwoBody_States_pp[ CCD_T_old[i].ket[Iket] ]->q];
+//        }
+
+//        double sum = 0;
+//        for(int i = 0; i < CCD_V_hhpp.size(); i++)
+//        {
+//            sum += (CCD_V_hhpp[i].mat*(CCD_T_hhpp[i].mat.transpose())).trace();
+//        }
+//        CCD_deltaE = sum;
+//        cout << iter << "\t" << setprecision(10) << sum << endl;
+//    }
+//    while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-9);
+//}
 
 //void Infinite::MatrixElement(vector<Channel> &channels, int p, int q, int r, int s)
 //{

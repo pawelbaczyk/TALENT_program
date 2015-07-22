@@ -6,7 +6,7 @@
 
 int main()
 {
-  Infinite infinite(14,2,0.16,2);//A,g_s,rho,nMax
+  Infinite infinite(2,2,0.16,1);//A,g_s,rho,nMax
 
 
 
@@ -15,7 +15,9 @@ int main()
   //infinite.generateTwoBody_States();
   //infinite.CCD_generateBlockMatrices();
 
-
+  cout << "OnFlight" << endl;
+    infinite.CCD_OnFlight();
+    cout << "Intermediates" << endl;
   infinite.CCD_BlockMatricesIntermediates();
   //  infinite.CCD_BlockMatricesLadders();
 
@@ -23,10 +25,10 @@ int main()
   //  cout<<infinite.CCD_deltaE<<endl;
   // infinite.HF_calculateE0();
   // infinite.CCD_SparseMatrices();
-  //  infinite.MBPT();
+   infinite.MBPT();
   //  cout<<infinite.MBPT_deltaE<<endl;
-  // cout << (infinite.HF_E0+infinite.MBPT_deltaE)/infinite.A << "\t" << (infinite.HF_E0+infinite.CCD_deltaE)/infinite.A << "\t"
-  //      << setprecision(10) << infinite.HF_E0/infinite.A << "\t" << infinite.HF_exact_E0 << endl;
+   cout << (infinite.HF_E0+infinite.MBPT_deltaE)/infinite.A << "\t" << (infinite.HF_E0+infinite.CCD_deltaE)/infinite.A << "\t"
+        << setprecision(10) << infinite.HF_E0/infinite.A << "\t" << infinite.HF_exact_E0 << endl;
 
  //Pairing pairing(4,8,0.5);
   // pairing.CCD_OnFlight();
