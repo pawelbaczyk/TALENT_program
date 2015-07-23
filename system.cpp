@@ -1,5 +1,7 @@
 #include "system.h"
 
+
+
 System::System(int _A) : A(_A)//generate system with A particles
 {
 }

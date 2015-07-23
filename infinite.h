@@ -35,6 +35,13 @@ public:
     double HF_spEnergy;//init to spEnergy
 };
 
+
+class SP_Infinite_compare
+{
+public:
+    bool operator()(SP_State*,SP_State*);
+};
+
 class TwoBody_Infinite: public TwoBody_State
 {
 public:
@@ -98,6 +105,7 @@ public:
     double thetaX, thetaY, thetaZ;
     void setTheta(double,double,double);
     void TA_calculateE0(int);
+    double TA_deltaE;
 
     void setRho(double);
 

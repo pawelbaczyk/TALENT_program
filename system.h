@@ -19,6 +19,8 @@ public:
     double spEnergy; //single particle energy
 };
 
+
+
 class TwoBody_State
 {
  public:

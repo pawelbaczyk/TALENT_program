@@ -1,5 +1,27 @@
 #include "infinite.h"
 
+bool SP_Infinite_compare::operator() (SP_State *P1, SP_State *P2)
+{
+    if (P1->spEnergy != P2->spEnergy)
+        return P1->spEnergy < P2->spEnergy;
+    else
+    {
+        SP_Infinite* S1 = (SP_Infinite*)P1;
+        SP_Infinite* S2 = (SP_Infinite*)P2;
+        if (S1->kx != S2->kx)
+            return S1->kx < S2->kx;
+        if (S1->ky != S2->ky)
+            return S1->ky < S2->ky;
+        if (S1->kz != S2->kz)
+            return S1->kz < S2->kz;
+        if (S1->spin != S2->spin)
+            return S1->spin > S2->spin;
+        if (S1->isospin != S2->isospin)
+            return S1->isospin > S2->isospin;
+        else return 0;
+    }
+
+}
 
 bool TwoBody_compare::operator() (TwoBody_State *P1, TwoBody_State *P2)
 {
@@ -73,7 +95,9 @@ void Infinite::generateSP_States(int A)
                             SP_States.push_back(new SP_Infinite(nX,nY,nZ,kx,ky,kz,-1,-1));
                         }
                     }
+    sort(SP_States.begin(),SP_States.end(),SP_Infinite_compare());
     numberSP = SP_States.size();
+    //printSP_States();
     HF_calculateE0();//to set HF s.p. energies
 }
 
@@ -93,18 +117,24 @@ void Infinite::setTheta(double _thetaX, double _thetaY, double _thetaZ)
 
 void Infinite::TA_calculateE0(int nA)
 {
+    TA_deltaE = 0.0;
     twisted_x.resize(nA);
     twisted_w.resize(nA);
     gauleg(0,M_PI,twisted_x,twisted_w);
+    int counter = 0;
     for (int x = 0; x < twisted_x.size(); x++)
         for (int y = 0; y < twisted_x.size(); y++)
             for (int z = 0; z < twisted_x.size(); z++)
             {
                 setTheta(twisted_x[x],twisted_x[y],twisted_x[z]);
-                CCD_BlockMatricesLadders();
-                cout << setprecision(10) << CCD_deltaE << endl;
-                cout << endl;
+                //CCD_BlockMatricesIntermediates();
+                //TA_deltaE += twisted_w[x] * twisted_w[y] * twisted_w[z] * CCD_deltaE;
+                HF_calculateE0();
+                TA_deltaE += twisted_w[x] * twisted_w[y] * twisted_w[z] * HF_E0;
+                cout << 1. * ++counter / nA/nA/nA;
             }
+    TA_deltaE /= pow(M_PI,3);
+    setTheta(0.0,0.0,0.0);
 }
 
 void Infinite::printSP_States()
@@ -340,6 +370,7 @@ void Infinite::CCD_generateBlockMatrices()
     CCD_V_hpmhpm.clear();
     CCD_V_hmphpm.clear();
     CCD_T_hhpp.clear();
+    CCD_position = Matrix<Position,Dynamic,Dynamic>();
     
     //hhpp
     CCD_position.resize(numberSP,numberSP);
@@ -348,7 +379,7 @@ void Infinite::CCD_generateBlockMatrices()
     {
         TwoBody_Infinite *State_hh = (TwoBody_Infinite *)TwoBody_States_hh[i];
         TwoBody_Infinite *State_pp = (TwoBody_Infinite *)TwoBody_States_pp[j];
-        while( (LessThan(State_pp,State_hh)) && (j < TwoBody_States_pp.size()))
+        while( (LessThan(State_pp,State_hh)) && (j < TwoBody_States_pp.size()-1))
         {
             j++;
             State_pp = (TwoBody_Infinite*)TwoBody_States_pp[j];
@@ -524,11 +555,11 @@ void Infinite::CCD_generateBlockMatrices()
     }
 
     //hmphpm
-    for (int i = 0, j = 0; i < TwoBody_States_hmp.size(); i++)
+    for (int i = 0, j = 0; (i < TwoBody_States_hmp.size()) && (j < TwoBody_States_hpm.size()); i++)
     {
         TwoBody_Infinite *State_hmp = (TwoBody_Infinite *)TwoBody_States_hmp[i];
         TwoBody_Infinite *State_hpm = (TwoBody_Infinite *)TwoBody_States_hpm[j];
-        while( (LessThan(State_hpm,State_hmp)) && (j < TwoBody_States_hpm.size()))
+        while( (LessThan(State_hpm,State_hmp)) && (j < TwoBody_States_hpm.size()-1))
         {
             j++;
             State_hpm = (TwoBody_Infinite*)TwoBody_States_hpm[j];
@@ -655,6 +686,8 @@ void Infinite::CCD_generateBlockMatrices()
         }
     }
     
+
+    /////
 //    for (int channel = 0; channel < CCD_V_hmphpm.size(); channel++)
 //    {
 //        for (int Ibra = 0; Ibra < CCD_V_hmphpm[channel].bra.size(); Ibra++)
@@ -724,7 +757,7 @@ void Infinite::CCD_BlockMatricesLadders()
             sum += (CCD_V_hhpp[i].mat*(CCD_T_hhpp[i].mat.transpose())).trace();
         }
         CCD_deltaE = sum;
-        cout << iter << "\t" << setprecision(10) << sum << endl;
+        //cout << iter << "\t" << setprecision(10) << sum << endl;
     }
     while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-8);
 }
@@ -884,7 +917,7 @@ void Infinite::CCD_BlockMatricesIntermediates()
             sum += (CCD_V_hhpp[i].mat*(CCD_T_hhpp[i].mat.transpose())).trace();
         }
         CCD_deltaE = sum;
-        cout << iter << "\t" << setprecision(10) << sum << endl;
+        //cout << iter << "\t" << setprecision(10) << sum << endl;
     }
     while (abs(CCD_deltaE_old - CCD_deltaE) > 1e-9);
 }
