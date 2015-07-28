@@ -828,7 +828,8 @@ void Infinite::CCD_BlockMatricesIntermediates()
         //hhhh part
         for(int i = 0; i < CCD_V_hhpp.size(); i++)
             CCD_intermediate_hhhh[i].mat = CCD_V_hhhh[i].mat
-                    + CCD_V_hhpp[i].mat * CCD_T_old[i].mat.transpose();
+	      //+ CCD_V_hhpp[i].mat * CCD_T_old[i].mat.transpose();
+	        + CCD_T_old[i].mat * CCD_V_hhpp[i].mat.transpose();
         //difficult part
         for (int channel = 0; channel < CCD_V_hmphpm.size(); channel++)
         {

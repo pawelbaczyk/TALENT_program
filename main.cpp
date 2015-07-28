@@ -6,21 +6,21 @@
 
 int main()
 {
-  Infinite infinite(66,2,0.10,3);//A,g_s,rho,nMax
+  Infinite infinite(14,2,0.10,2);//A,g_s,rho,nMax
 
   infinite.HF_calculateE0();//IMPORTANT;
-   infinite.TA_calculateE0(1);
-    //infinite.CCD_BlockMatricesIntermediates();
-   //infinite.MBPT();
-   infinite.HF_cal_exact_E0();
-   cout << "MBPT\t" << "CCD\t" << "TA\t" << "HF\t" << "HFinf" << endl;
-   cout << (infinite.HF_E0+infinite.MBPT_deltaE)/infinite.A << "\t"
-        << (infinite.HF_E0+infinite.CCD_deltaE)/infinite.A << "\t"
-        << (infinite.TA_deltaE)/infinite.A << "\t"
-        << setprecision(10) << infinite.HF_E0/infinite.A << "\t"
-        << infinite.HF_exact_E0 << endl;
+  infinite.TA_calculateE0(1);
+  infinite.CCD_BlockMatricesIntermediates();
+  //infinite.MBPT();
+  infinite.HF_cal_exact_E0();
+  cout << "MBPT\t" << "CCD\t" << "TA\t" << "HF\t" << "HFinf" << endl;
+  cout << (infinite.HF_E0+infinite.MBPT_deltaE)/infinite.A << "\t"
+       << (infinite.HF_E0+infinite.CCD_deltaE)/infinite.A << "\t"
+       << (infinite.TA_deltaE)/infinite.A << "\t"
+       << setprecision(10) << infinite.HF_E0/infinite.A << "\t"
+       << infinite.HF_exact_E0 << endl;
 
- //Pairing pairing(4,8,0.5);
+  //Pairing pairing(4,8,0.5);
   // pairing.CCD_OnFlight();
   //pairing.MBPT();
   // cout << pairing.MBPT_deltaE << "\t" << pairing.CCD_deltaE << endl;
