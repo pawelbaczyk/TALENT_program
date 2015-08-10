@@ -6,25 +6,24 @@ System::System(int _A) : A(_A)//generate system with A particles
 {
 }
 
-System::~System()
+System::~System()//TODO deleting vector elements!
 {
-  for (int i = SP_States.size()-1; i >= 0; i--)
+    for (int i = SP_States.size()-1; i >= 0; i--)
     {
-      delete SP_States[i];
+        delete SP_States[i];
     }
-  for(int i=0;i<TwoBody_States_hh.size();i++)
+    for (int i = 0; i < TwoBody_States_hh.size(); i++)
     {
-      delete TwoBody_States_hh[i];
+        delete TwoBody_States_hh[i];
     }
-  for(int i=0;i<TwoBody_States_hp.size();i++)
+    for (int i = 0; i < TwoBody_States_hp.size(); i++)
     {
-      delete TwoBody_States_hp[i];
+        delete TwoBody_States_hp[i];
     }
-  for(int i=0;i<TwoBody_States_pp.size();i++)
+    for (int i = 0; i < TwoBody_States_pp.size(); i++)
     {
-      delete TwoBody_States_pp[i];
+        delete TwoBody_States_pp[i];
     }
-
 }
 
 void System::generateH()//calculate the hamiltonian matrix

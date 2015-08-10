@@ -49,27 +49,27 @@ bool Channel::Include(TwoBody_Infinite &TwoBody)
 }
 
 Infinite::Infinite(int _A, int _g_s, double _rho, int _nMax)
-    : System(_A), gauss_x(100), gauss_w(100)
+    : System(_A), g_s(_g_s), nMax(_nMax), gauss_x(100), gauss_w(100)
 {
-    g_s = _g_s;
-    nMax = _nMax;
     thetaX = 0.0;
     thetaY = 0.0;
     thetaZ = 0.0;
     setRho(_rho);
     gauleg(-1,1,gauss_x,gauss_w);
 }
+
 Infinite::~Infinite()
 {
-    for(int i=0;i<TwoBody_States_hmp.size();i++)
+    for (int i = 0; i < TwoBody_States_hmp.size(); i++)
     {
         delete TwoBody_States_hmp[i];
     }
-    for(int i=0;i<TwoBody_States_hpm.size();i++)
+    for (int i = 0; i < TwoBody_States_hpm.size(); i++)
     {
         delete TwoBody_States_hpm[i];
     }
 }
+
 void Infinite::generateSP_States(int A)
 {
     SP_States.clear();
@@ -97,150 +97,198 @@ void Infinite::generateSP_States(int A)
                     }
     sort(SP_States.begin(),SP_States.end(),SP_Infinite_compare());
     numberSP = SP_States.size();
-    //printSP_States();
+
     HF_calculateE0();//to set HF s.p. energies
 }
 
-void Infinite::setRho(double _rho)
+void Infinite::generateMagicNumbers()
 {
-    rho = _rho;
-    generateSP_States(A);
-}
-
-void Infinite::setTheta(double _thetaX, double _thetaY, double _thetaZ)
-{
-    thetaX = _thetaX;
-    thetaY = _thetaY;
-    thetaZ = _thetaZ;
-    generateSP_States(A);
-}
-
-void Infinite::TA_calculateE0(int nA)
-{
-    TA_deltaE = 0.0;
-    twisted_x.resize(nA);
-    twisted_w.resize(nA);
-    gauleg(0,M_PI,twisted_x,twisted_w);
-    int counter = 0;
-    for (int x = 0; x < twisted_x.size(); x++)
-        for (int y = 0; y < twisted_x.size(); y++)
-            for (int z = 0; z < twisted_x.size(); z++)
-            {
-                setTheta(twisted_x[x],twisted_x[y],twisted_x[z]);
-                //CCD_BlockMatricesIntermediates();
-                //TA_deltaE += twisted_w[x] * twisted_w[y] * twisted_w[z] * CCD_deltaE;
-                HF_calculateE0();
-                TA_deltaE += twisted_w[x] * twisted_w[y] * twisted_w[z] * HF_E0;
-                cout << 1. * ++counter / nA/nA/nA;
-            }
-    TA_deltaE /= pow(M_PI,3);
-    setTheta(0.0,0.0,0.0);
+    magicNumbers.clear();
+    double energy = SP_States[0]->spEnergy;
+    for (int i = 0; i < numberSP; i++)
+    {
+        if (abs(SP_States[i]->spEnergy - energy) > 1e-6)
+        {
+            energy = SP_States[i]->spEnergy;
+            magicNumbers.push_back(i);
+        }
+    }
+    cout << "MAGIC NUMBERS" << endl;
+    cout << "Shell\tCapacity\n";
+    cout << magicNumbers[0] << "\t" << magicNumbers[0] << "\n";
+    for (int i = 1; i < magicNumbers.size(); i++)
+        cout << magicNumbers[i] << "\t" << magicNumbers[i]-magicNumbers[i-1] << "\n";
 }
 
 void Infinite::printSP_States()
 {
+    cout << "***************************************************************\n";
+    cout << "*                   Single particles states                   *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "Energy\t\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
     for (int i = 0; i < SP_States.size(); i++)
     {
         SP_Infinite* state = (SP_Infinite*)SP_States[i];
         cout << std::fixed << i+1 << "\t" << state->spEnergy << "\t"
-             << state->kx << "\t" << state->ky << "\t" << state->kz << "\t"
+             << state->nx << "\t" << state->ny << "\t" << state->nz << "\t"
              << (state->spin == 1 ? "+" : "-") << "\t" << (state->isospin == 1 ? "n" : "p")
-             << endl;//TODO spin and isospin definition changed
+             << endl;
+        if (i+1 == A)
+            cout << "************************* Fermi level *************************\n";
     }
+    cout << "***************************************************************\n";
 }
 
 void Infinite::generateTwoBody_States()
 {
     TwoBody_States_hh.clear();
-    TwoBody_States_hp.clear();
-    TwoBody_States_pp.clear();
-    TwoBody_States_hmp.clear();
-    TwoBody_States_hpm.clear();
-    for(int i=0;i<A;i++)
-        for(int j=i+1;j<A;j++)
+    for (int i = 0; i < A; i++)
+        for (int j = i+1; j < A; j++)
         {
-            SP_Infinite* I=(SP_Infinite*)SP_States[i];
-            SP_Infinite* J=(SP_Infinite*)SP_States[j];
-            int Nx=I->nx + J->nx;
-            int Ny=I->ny + J->ny;
-            int Nz=I->nz + J->nz;
-            int Sz=(I->spin + J->spin)/2;
-            int Tz=(I->isospin + J->isospin)/2;
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            int Nx = I->nx + J->nx;
+            int Ny = I->ny + J->ny;
+            int Nz = I->nz + J->nz;
+            int Sz = (I->spin + J->spin)/2;
+            int Tz = (I->isospin + J->isospin)/2;
             TwoBody_States_hh.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
+    sort(TwoBody_States_hh.begin(),TwoBody_States_hh.end(),TwoBody_compare());
 
-    for(int i=0;i<A;i++)
-        for(int j=A;j<numberSP;j++)
+    TwoBody_States_hp.clear();
+    for (int i = 0; i < A; i++)
+        for (int j = A; j < numberSP; j++)
         {
-            SP_Infinite* I=(SP_Infinite*)SP_States[i];
-            SP_Infinite* J=(SP_Infinite*)SP_States[j];
-            int Nx=I->nx + J->nx;
-            int Ny=I->ny + J->ny;
-            int Nz=I->nz + J->nz;
-            int Sz=(I->spin + J->spin)/2;
-            int Tz=(I->isospin + J->isospin)/2;
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            int Nx = I->nx + J->nx;
+            int Ny = I->ny + J->ny;
+            int Nz = I->nz + J->nz;
+            int Sz = (I->spin + J->spin)/2;
+            int Tz = (I->isospin + J->isospin)/2;
             TwoBody_States_hp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
-    for(int i=A;i<numberSP;i++)
-        for(int j=i+1;j<numberSP;j++)
+    sort(TwoBody_States_hp.begin(),TwoBody_States_hp.end(),TwoBody_compare());
+
+    TwoBody_States_pp.clear();
+    for (int i = A; i < numberSP; i++)
+        for (int j = i+1; j < numberSP; j++)
         {
-            SP_Infinite* I=(SP_Infinite*)SP_States[i];
-            SP_Infinite* J=(SP_Infinite*)SP_States[j];
-            int Nx=I->nx + J->nx;
-            int Ny=I->ny + J->ny;
-            int Nz=I->nz + J->nz;
-            int Sz=(I->spin + J->spin)/2;
-            int Tz=(I->isospin + J->isospin)/2;
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            int Nx = I->nx + J->nx;
+            int Ny = I->ny + J->ny;
+            int Nz = I->nz + J->nz;
+            int Sz = (I->spin + J->spin)/2;
+            int Tz = (I->isospin + J->isospin)/2;
             TwoBody_States_pp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
+    sort(TwoBody_States_pp.begin(),TwoBody_States_pp.end(),TwoBody_compare());
 
-    for(int i = 0; i < A; i++)
-        for(int j = A; j <numberSP; j++)
+    TwoBody_States_hmp.clear();
+    for (int i = 0; i < A; i++)
+        for (int j = A; j <numberSP; j++)
         {
-            SP_Infinite* I=(SP_Infinite*)SP_States[i];
-            SP_Infinite* J=(SP_Infinite*)SP_States[j];
-            int Nx=-I->nx + J->nx;
-            int Ny=-I->ny + J->ny;
-            int Nz=-I->nz + J->nz;
-            int Sz=(-I->spin + J->spin)/2;
-            int Tz=(-I->isospin + J->isospin)/2;
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            int Nx = -I->nx + J->nx;
+            int Ny = -I->ny + J->ny;
+            int Nz = -I->nz + J->nz;
+            int Sz = (-I->spin + J->spin)/2;
+            int Tz = (-I->isospin + J->isospin)/2;
             TwoBody_States_hmp.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
+    sort(TwoBody_States_hmp.begin(),TwoBody_States_hmp.end(),TwoBody_compare());
 
-    for(int i = 0; i < A; i++)
-        for(int j = A; j <numberSP; j++)
+    TwoBody_States_hpm.clear();
+    for (int i = 0; i < A; i++)
+        for (int j = A; j <numberSP; j++)
         {
-            SP_Infinite* I=(SP_Infinite*)SP_States[i];
-            SP_Infinite* J=(SP_Infinite*)SP_States[j];
-            int Nx=I->nx - J->nx;
-            int Ny=I->ny - J->ny;
-            int Nz=I->nz - J->nz;
-            int Sz=(I->spin - J->spin)/2;
-            int Tz=(I->isospin - J->isospin)/2;
+            SP_Infinite* I = (SP_Infinite*)SP_States[i];
+            SP_Infinite* J = (SP_Infinite*)SP_States[j];
+            int Nx = I->nx - J->nx;
+            int Ny = I->ny - J->ny;
+            int Nz = I->nz - J->nz;
+            int Sz = (I->spin - J->spin)/2;
+            int Tz = (I->isospin - J->isospin)/2;
             TwoBody_States_hpm.push_back(new TwoBody_Infinite(i,j,Nx,Ny,Nz,Sz,Tz));
         }
-
-    sort(TwoBody_States_hh.begin(),TwoBody_States_hh.end(),TwoBody_compare());
-    sort(TwoBody_States_hp.begin(),TwoBody_States_hp.end(),TwoBody_compare());
-    sort(TwoBody_States_pp.begin(),TwoBody_States_pp.end(),TwoBody_compare());
-    sort(TwoBody_States_hmp.begin(),TwoBody_States_hmp.end(),TwoBody_compare());
     sort(TwoBody_States_hpm.begin(),TwoBody_States_hpm.end(),TwoBody_compare());
 }
 
-void Infinite::printTwoBody_States()//TODO
+void Infinite::printTwoBody_States()
 {
-    for(int i=0;i<TwoBody_States_hpm.size();i++)
+    cout << "***************************************************************\n";
+    cout << "*                    Two particle states hh                   *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "p\tq\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
+    for (int i = 0; i < TwoBody_States_hh.size(); i++)
     {
-        TwoBody_Infinite* P1=(TwoBody_Infinite*)TwoBody_States_hpm[i];
-        cout<<i<<"\t";
-        cout<<P1->p<<"\t";
-        cout<<P1->q<<"\t";
-        cout<<P1->Sz<<"\t";
-        cout<<P1->Tz<<"\t";
-        cout<<P1->Nx<<"\t";
-        cout<<P1->Ny<<"\t";
-        cout<<P1->Nz<<endl;
+        TwoBody_Infinite* state = (TwoBody_Infinite*)TwoBody_States_hh[i];
+        cout << i+1 << "\t" << state->p+1 << "\t" << state->q+1 << "\t"
+             << state->Nx<<"\t" << state->Ny << "\t" << state->Nz << "\t"
+             << state->Sz << "\t" << state->Tz << "\n";
     }
+    cout << "***************************************************************\n";
+
+    cout << "***************************************************************\n";
+    cout << "*                    Two particle states hp                   *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "p\tq\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
+    for (int i = 0; i < TwoBody_States_hp.size(); i++)
+    {
+        TwoBody_Infinite* state = (TwoBody_Infinite*)TwoBody_States_hp[i];
+        cout << i+1 << "\t" << state->p+1 << "\t" << state->q+1 << "\t"
+             << state->Nx<<"\t" << state->Ny << "\t" << state->Nz << "\t"
+             << state->Sz << "\t" << state->Tz << "\n";
+    }
+    cout << "***************************************************************\n";
+
+    cout << "***************************************************************\n";
+    cout << "*                    Two particle states pp                   *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "p\tq\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
+    for (int i = 0; i < TwoBody_States_pp.size(); i++)
+    {
+        TwoBody_Infinite* state = (TwoBody_Infinite*)TwoBody_States_pp[i];
+        cout << i+1 << "\t" << state->p+1 << "\t" << state->q+1 << "\t"
+             << state->Nx<<"\t" << state->Ny << "\t" << state->Nz << "\t"
+             << state->Sz << "\t" << state->Tz << "\n";
+    }
+    cout << "***************************************************************\n";
+
+    cout << "***************************************************************\n";
+    cout << "*                   Two particle states h-1p                  *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "p\tq\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
+    for (int i = 0; i < TwoBody_States_hmp.size(); i++)
+    {
+        TwoBody_Infinite* state = (TwoBody_Infinite*)TwoBody_States_hmp[i];
+        cout << i+1 << "\t" << state->p+1 << "\t" << state->q+1 << "\t"
+             << state->Nx<<"\t" << state->Ny << "\t" << state->Nz << "\t"
+             << state->Sz << "\t" << state->Tz << "\n";
+    }
+    cout << "***************************************************************\n";
+
+    cout << "***************************************************************\n";
+    cout << "*                   Two particle states hp-1                  *\n";
+    cout << "***************************************************************\n";
+    cout << "Number\t" << "p\tq\t" << "nx\tny\tnz\t" << "Spin\t" << "Isospin\n";
+    cout << "***************************************************************\n";
+    for (int i = 0; i < TwoBody_States_hpm.size(); i++)
+    {
+        TwoBody_Infinite* state = (TwoBody_Infinite*)TwoBody_States_hpm[i];
+        cout << i+1 << "\t" << state->p+1 << "\t" << state->q+1 << "\t"
+             << state->Nx<<"\t" << state->Ny << "\t" << state->Nz << "\t"
+             << state->Sz << "\t" << state->Tz << "\n";
+    }
+    cout << "***************************************************************\n";
 }
 
 void Infinite::generateConfigurations()
@@ -252,6 +300,57 @@ void Infinite::printConfigurations()
 {
 
 }
+
+void Infinite::setRho(double _rho)
+{
+    rho = _rho;
+    generateSP_States(A);
+}
+
+void Infinite::setA(double _A)
+{
+    A = _A;
+    generateSP_States(A);
+}
+
+void Infinite::setTheta(double _thetaX, double _thetaY, double _thetaZ)
+{
+    thetaX = _thetaX;
+    thetaY = _thetaY;
+    thetaZ = _thetaZ;
+    generateSP_States(A);
+}
+
+void Infinite::TA_calculateE0(int nA, double (Infinite::*func)(), double (Infinite::*ref)())
+{
+    double refValue = (this->*ref)();
+    double SP_diff = abs(refValue);
+    SP_deltaE = 0.0;
+    TA_deltaE = 0.0;
+    twisted_x.resize(nA);
+    twisted_w.resize(nA);
+    gauleg(0,M_PI,twisted_x,twisted_w);
+    for (int x = 0; x < twisted_x.size(); x++)
+        for (int y = 0; y < twisted_x.size(); y++)
+            for (int z = 0; z < twisted_x.size(); z++)
+            {
+                setTheta(twisted_x[x],twisted_x[y],twisted_x[z]);
+                double value = (this->*func)();
+                TA_deltaE += twisted_w[x] * twisted_w[y] * twisted_w[z] * value;
+                if (abs(value/A - refValue) < SP_diff)
+                {
+                    SP_diff = abs(value/A - refValue);
+                    SP_x = x;
+                    SP_y = y;
+                    SP_z = z;
+                    SP_deltaE = value;
+                }
+            }
+    TA_deltaE /= pow(M_PI,3);
+    setTheta(0.0,0.0,0.0);
+}
+
+
 
 double Infinite::V1B(int a,int b)
 {
@@ -309,7 +408,7 @@ bool Infinite::deltaSpinIsospin(SP_Infinite* P, SP_Infinite* Q, SP_Infinite* R, 
             (Q->spin == S->spin) && (Q->isospin == S->isospin));
 }
 
-void Infinite::HF_calculateE0()
+double Infinite::HF_calculateE0()
 {
     HF_E0 = 0.0;
     for (int i = 0; i < numberSP; i++)
@@ -322,6 +421,27 @@ void Infinite::HF_calculateE0()
         if (i < A)
             HF_E0 += HF_T + 0.5 * HF_V;
     }
+    return HF_E0;
+}
+
+double Infinite::HF_calculateT0()
+{
+    double HF_T0 = 0.0;
+    for (int j = 0; j < A; j++)
+    {
+        double HF_T = SP_States[j]->spEnergy;
+        HF_T0 += HF_T;
+    }
+    return HF_T0;
+}
+
+double Infinite::HF_calculateV0()
+{
+    double HF_V0 = 0.0;
+    for (int i = 0; i < A; i++)
+        for (int j = 0; j < A; j++)
+            HF_V0 += 0.5 * V2B(i,j,i,j);
+    return HF_V0;
 }
 
 double Infinite::HF_exact_f(double r)
@@ -350,7 +470,7 @@ double Infinite::HF_exact_f(double r)
             (vs*vs*vt*vt*V4 + vs*vt*vt*V3 + vt*vs*vs*V2 + vs*vt*V1);
 }
 
-void Infinite::HF_cal_exact_E0()
+double Infinite::HF_exactE0()
 {
     HF_exact_E0 = 0.3 * hbar*hbar / m * k_F * k_F;
     for(int i = 0; i < gauss_x.size(); i++)
@@ -360,6 +480,25 @@ void Infinite::HF_cal_exact_E0()
         HF_exact_E0 += rho * 2*M_PI/(g_s*g_s)
                 * r * r * HF_exact_f(r) * gauss_w[i] * M_PI * 0.25 / pow(cos(temp),2);
     }
+    return HF_exact_E0;
+}
+
+double Infinite::HF_exactT0()
+{
+    return 0.3 * hbar*hbar / m * k_F * k_F;
+}
+
+double Infinite::HF_exactV0()
+{
+    double HF_exact_V0 = 0.0;
+    for(int i = 0; i < gauss_x.size(); i++)
+    {
+        double temp = M_PI * 0.25 * (gauss_x[i] + 1);
+        double r = tan(temp);
+        HF_exact_V0 += rho * 2*M_PI/(g_s*g_s)
+                * r * r * HF_exact_f(r) * gauss_w[i] * M_PI * 0.25 / pow(cos(temp),2);
+    }
+    return HF_exact_V0;
 }
 
 void Infinite::CCD_generateBlockMatrices()

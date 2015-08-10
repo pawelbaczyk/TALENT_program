@@ -1,6 +1,6 @@
 CXX=g++
 CXXDEF=
-CXXFLAGS=-O3 
+CXXFLAGS=-O3 -std=c++11
 
 
 DEPS=       help.h system.h pairing.h infinite.h
@@ -9,7 +9,7 @@ OBJ= main.o help.o system.o pairing.o infinite.o
 %.o: %.cpp $(DEPS)
 	$(CXX) ${CXXDEF} -c -o $@ $< $(CXXFLAGS)
 test:$(OBJ)
-	$(CXX)  -o $@ $^ $(CXXFLAGS)
+	$(CXX)  -o $@ $^ $(CXXFLAGS) 
 .PHONY: clean
 
 clean:
